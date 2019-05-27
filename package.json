@@ -1,0 +1,12 @@
+{
+  "name": "@statewalker/root",
+  "private": true,
+  "scripts": {
+    "postinstall": "lerna bootstrap",
+    "bootstrap": "lerna exec npm install",
+    "test": "lerna exec npm test"
+  },
+  "devDependencies": {
+    "lerna": "^3.13.1"
+  }
+}
