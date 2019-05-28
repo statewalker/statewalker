@@ -1,12 +1,12 @@
 {
   "name": "@statewalker/fsm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "author": "Mikhail Kotelnikov <mikhail.kotelnikov@gmail.com>",
   "license": "ISC",
-  "dependencies" : {
-    "@statewalker/tree" : "^0.0.0"
+  "dependencies": {
+    "@statewalker/tree": "^0.1.0"
   },
   "devDependencies": {
     "expect.js": "^0.3.1",
