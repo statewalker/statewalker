@@ -1,4 +1,7 @@
-const { treeIterator, asyncTreeIterator, MODE } = require('@statewalker/tree');
+// const { treeIterator, asyncTreeIterator, MODE } = require('@statewalker/tree/src/treeIterator');
+const MODE = require('@statewalker/tree/src/MODE');
+const treeIterator = require('@statewalker/tree/src/treeIterator');
+const asyncTreeIterator = require('@statewalker/tree/src/asyncTreeIterator');
 const FsmState = require('./FsmState');
 
 module.exports = class FsmProcess extends FsmState {
@@ -21,9 +24,16 @@ module.exports = class FsmProcess extends FsmState {
     }
   }
 
-  async *asyncRun() {
-    for await (let s of asyncTreeIterator(this._getIteratorOptions())) {
-      yield s.node;
+  asyncRun() {
+    const it = asyncTreeIterator(this._getIteratorOptions());
+    const asyncIterator = Symbol.asyncIterator || Symbol.iterator;
+    return {
+      async next() {
+        const item = await it.next();
+        if (item.done) return item;
+        return { value : item.value.node };
+      },
+      [asyncIterator]() { return this; }
     }
   }
 

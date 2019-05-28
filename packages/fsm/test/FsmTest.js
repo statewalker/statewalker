@@ -53,88 +53,89 @@ const main = {
 
 describe('Fsm', async () => {
 
-  it('should iterate over states and perform required state transitions', async () => {
-    await test({
-      method : 'run',
-      descriptor : main,
-      events : [
-        // Login session
-        'submit', 'error', 'ok', 'submit', 'ok',
-        // Main state
-        'tto',
-        // Edit
-        'edit', 'submit', 'ok',
-        // Close the result message
-        'ok',
-        // Exit from the main view
-         'logout'
-      ],
-      control : [
-        '-[]->/MAIN/LOGIN/FORM/SHOW_FORM',
-        '-[submit]->/MAIN/LOGIN/FORM/VALIDATE_FORM',
-        '-[error]->/MAIN/LOGIN/FORM/SHOW_FORM_ERRORS',
-        '-[ok]->/MAIN/LOGIN/FORM/SHOW_FORM',
-        '-[submit]->/MAIN/LOGIN/FORM/VALIDATE_FORM',
-        '-[ok]->/MAIN/MAIN_VIEW/PAGE_VIEW',
-        '-[tto]->/MAIN/MAIN_VIEW/PAGE_VIEW',
-        '-[edit]->/MAIN/MAIN_VIEW/PAGE_EDIT/FORM/SHOW_FORM',
-        '-[submit]->/MAIN/MAIN_VIEW/PAGE_EDIT/FORM/VALIDATE_FORM',
-        '-[ok]->/MAIN/MAIN_VIEW/PAGE_UPDATED_MESSAGE',
-        '-[ok]->/MAIN/MAIN_VIEW/PAGE_VIEW',
-        '-[logout]->/MAIN/LOGIN/FORM/SHOW_FORM',
-      ],
-      traces : [
-        '  <MAIN event="">',
-        '    <LOGIN event="">',
-        '      <FORM event="">',
-        '        <SHOW_FORM event="">',
-        '         [submit]',
-        '        </SHOW_FORM>',
-        '        <VALIDATE_FORM event="submit">',
-        '         [error]',
-        '        </VALIDATE_FORM>',
-        '        <SHOW_FORM_ERRORS event="error">',
-        '         [ok]',
-        '        </SHOW_FORM_ERRORS>',
-        '        <SHOW_FORM event="ok">',
-        '         [submit]',
-        '        </SHOW_FORM>',
-        '        <VALIDATE_FORM event="submit">',
-        '         [ok]',
-        '        </VALIDATE_FORM>',
-        '      </FORM>',
-        '    </LOGIN>',
-        '    <MAIN_VIEW event="ok">',
-        '      <PAGE_VIEW event="ok">',
-        '       [tto]',
-        '      </PAGE_VIEW>',
-        '      <PAGE_VIEW event="tto">',
-        '       [edit]',
-        '      </PAGE_VIEW>',
-        '      <PAGE_EDIT event="edit">',
-        '        <FORM event="edit">',
-        '          <SHOW_FORM event="edit">',
-        '           [submit]',
-        '          </SHOW_FORM>',
-        '          <VALIDATE_FORM event="submit">',
-        '           [ok]',
-        '          </VALIDATE_FORM>',
-        '        </FORM>',
-        '      </PAGE_EDIT>',
-        '      <PAGE_UPDATED_MESSAGE event="ok">',
-        '       [ok]',
-        '      </PAGE_UPDATED_MESSAGE>',
-        '      <PAGE_VIEW event="ok">',
-        '       [logout]',
-        '      </PAGE_VIEW>',
-        '    </MAIN_VIEW>',
-        '    <LOGIN event="logout">',
-        '      <FORM event="logout">',
-        '        <SHOW_FORM event="logout">'
-      ]
-    })
+  const options = {
+    descriptor : main,
+    events : [
+      // Login session
+      'submit', 'error', 'ok', 'submit', 'ok',
+      // Main state
+      'tto',
+      // Edit
+      'edit', 'submit', 'ok',
+      // Close the result message
+      'ok',
+      // Exit from the main view
+       'logout'
+    ],
+    control : [
+      '-[]->/MAIN/LOGIN/FORM/SHOW_FORM',
+      '-[submit]->/MAIN/LOGIN/FORM/VALIDATE_FORM',
+      '-[error]->/MAIN/LOGIN/FORM/SHOW_FORM_ERRORS',
+      '-[ok]->/MAIN/LOGIN/FORM/SHOW_FORM',
+      '-[submit]->/MAIN/LOGIN/FORM/VALIDATE_FORM',
+      '-[ok]->/MAIN/MAIN_VIEW/PAGE_VIEW',
+      '-[tto]->/MAIN/MAIN_VIEW/PAGE_VIEW',
+      '-[edit]->/MAIN/MAIN_VIEW/PAGE_EDIT/FORM/SHOW_FORM',
+      '-[submit]->/MAIN/MAIN_VIEW/PAGE_EDIT/FORM/VALIDATE_FORM',
+      '-[ok]->/MAIN/MAIN_VIEW/PAGE_UPDATED_MESSAGE',
+      '-[ok]->/MAIN/MAIN_VIEW/PAGE_VIEW',
+      '-[logout]->/MAIN/LOGIN/FORM/SHOW_FORM',
+    ],
+    traces : [
+      '  <MAIN event="">',
+      '    <LOGIN event="">',
+      '      <FORM event="">',
+      '        <SHOW_FORM event="">',
+      '         [submit]',
+      '        </SHOW_FORM>',
+      '        <VALIDATE_FORM event="submit">',
+      '         [error]',
+      '        </VALIDATE_FORM>',
+      '        <SHOW_FORM_ERRORS event="error">',
+      '         [ok]',
+      '        </SHOW_FORM_ERRORS>',
+      '        <SHOW_FORM event="ok">',
+      '         [submit]',
+      '        </SHOW_FORM>',
+      '        <VALIDATE_FORM event="submit">',
+      '         [ok]',
+      '        </VALIDATE_FORM>',
+      '      </FORM>',
+      '    </LOGIN>',
+      '    <MAIN_VIEW event="ok">',
+      '      <PAGE_VIEW event="ok">',
+      '       [tto]',
+      '      </PAGE_VIEW>',
+      '      <PAGE_VIEW event="tto">',
+      '       [edit]',
+      '      </PAGE_VIEW>',
+      '      <PAGE_EDIT event="edit">',
+      '        <FORM event="edit">',
+      '          <SHOW_FORM event="edit">',
+      '           [submit]',
+      '          </SHOW_FORM>',
+      '          <VALIDATE_FORM event="submit">',
+      '           [ok]',
+      '          </VALIDATE_FORM>',
+      '        </FORM>',
+      '      </PAGE_EDIT>',
+      '      <PAGE_UPDATED_MESSAGE event="ok">',
+      '       [ok]',
+      '      </PAGE_UPDATED_MESSAGE>',
+      '      <PAGE_VIEW event="ok">',
+      '       [logout]',
+      '      </PAGE_VIEW>',
+      '    </MAIN_VIEW>',
+      '    <LOGIN event="logout">',
+      '      <FORM event="logout">',
+      '        <SHOW_FORM event="logout">'
+    ]
+  }
+  test(`sync: should iterate over states and perform required state transitions`, { ...options, method : 'run' });
+  test(`async: should iterate over states and perform required state transitions`, { ...options, method : 'asyncRun' });
 
-    async function test({ descriptor, events, control, traces, method = 'run' }) {
+  function test(msg, { descriptor, events, control, traces, method = 'run' }) {
+    it(msg, async () => {
       const testTraces = [];
       const print = (state, msg) => {
         let shift = '';
@@ -143,7 +144,7 @@ describe('Fsm', async () => {
           shift += '  ';
         }
         testTraces.push(shift + msg);
-      }
+      }      
       const process = new FsmProcess({
         descriptor : new FsmStateDescriptor(descriptor),
         before(state) {
@@ -166,6 +167,6 @@ describe('Fsm', async () => {
       }
       expect(test).to.eql(control);
       expect(testTraces).to.eql(traces);
-    }
-  })
+    })
+  }
 })
