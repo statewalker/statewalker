@@ -1,3 +1,1 @@
-require('./TreeWalkerTest')
-require('./TreeBuilderTest');
-require('./TreeIteratorTest');
+require('./TreeWalkerTest');

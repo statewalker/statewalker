@@ -1,4 +1,4 @@
-const asyncTreeIterator = require('./asyncTreeIterator');
+const { asyncTreeIterator } = require('@statewalker/tree');
 
 module.exports = function iteratorOverIterators({ top, state = {}, newIterator, ...options }) {
   const shift = async (state, iterator) => {

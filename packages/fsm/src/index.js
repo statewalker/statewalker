@@ -1,5 +1,5 @@
 module.exports = {
+  FsmConfig : require('./FsmConfig'),
   FsmState : require('./FsmState'),
-  FsmStateDescriptor : require('./FsmStateDescriptor'),
   FsmProcess : require('./FsmProcess')
-}
+};

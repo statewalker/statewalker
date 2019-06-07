@@ -1,0 +1,45 @@
+{
+  "transitions": [
+    { "from" : "", "event" : "*", "to" : "LOGIN" },
+    { "from" : "LOGIN", "event" : "ok", "to" : "MAIN_VIEW" },
+    { "from" : "MAIN_VIEW", "event" : "*", "to" : "MAIN_VIEW" },
+    { "from" : "MAIN_VIEW", "event" : "logout", "to" : "LOGIN" }
+  ],
+  "states": [
+    {
+      "key": "LOGIN",
+      "transitions": [
+        { "from" : "", "event" : "*", "to" : "FORM" }
+      ]
+    },
+    {
+      "key": "MAIN_VIEW",
+      "transitions": [
+        { "from" : "*", "event" : "*", "to" : "PAGE_VIEW" },
+        { "from" : "*", "event" : "logout", "to" : "" },
+        { "from" : "PAGE_VIEW", "event" : "edit", "to" : "PAGE_EDIT" },
+        { "from" : "PAGE_EDIT", "event" : "ok", "to" : "PAGE_UPDATED_MESSAGE" }
+      ],
+      "states": [
+        {
+          "key": "PAGE_EDIT",
+          "transitions": [
+            { "from" : "", "event" : "*", "to" : "FORM" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "FORM",
+      "transitions": [
+        { "from" : "", "event" : "*", "to" : "SHOW_FORM" },
+        { "from" : "SHOW_FORM", "event" : "*", "to" : "VALIDATE_FORM" },
+        { "from" : "SHOW_FORM", "event" : "cancel", "to" : "" },
+        { "from" : "VALIDATE_FORM", "event" : "ok", "to" : "" },
+        { "from" : "VALIDATE_FORM", "event" : "*", "to" : "SHOW_FORM_ERRORS" },
+        { "from" : "SHOW_FORM_ERRORS", "event" : "*", "to" : "SHOW_FORM" },
+        { "from" : "SHOW_FORM_ERRORS", "event" : "cancel", "to" : "" }
+      ]
+    }
+  ]
+}

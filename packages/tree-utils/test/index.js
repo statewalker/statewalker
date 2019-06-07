@@ -1,0 +1,2 @@
+require('./ChunkIteratorTest')
+require('./TreeBuilderTest');

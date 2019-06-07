@@ -4,7 +4,8 @@
   "scripts": {
     "postinstall": "lerna bootstrap",
     "bootstrap": "lerna exec npm install",
-    "test": "lerna exec npm test"
+    "test": "lerna exec npm test",
+    "bundle": "lerna exec npm run bundle"
   },
   "devDependencies": {
     "lerna": "^3.13.1"

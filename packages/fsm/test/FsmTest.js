@@ -1,6 +1,6 @@
 const expect = require('expect.js');
 const { asyncTreeIterator, MODE } = require('@statewalker/tree');
-const { FsmStateDescriptor, FsmProcess } = require('../');
+const { FsmConfig, FsmProcess } = require('../');
 
 const main = {
   key : 'MAIN',
@@ -132,7 +132,7 @@ describe('Fsm', async () => {
     ]
   }
   test(`sync: should iterate over states and perform required state transitions`, { ...options, method : 'run' });
-  test(`async: should iterate over states and perform required state transitions`, { ...options, method : 'asyncRun' });
+  test(`async: should iterate over states and perform required state transitions`, { ...options, method : 'runAsync' });
 
   function test(msg, { descriptor, events, control, traces, method = 'run' }) {
     it(msg, async () => {
@@ -144,9 +144,9 @@ describe('Fsm', async () => {
           shift += '  ';
         }
         testTraces.push(shift + msg);
-      }      
+      }
       const process = new FsmProcess({
-        descriptor : new FsmStateDescriptor(descriptor),
+        descriptor : FsmConfig.buildDescriptor(descriptor),
         before(state) {
           print(state, `<${state.key} event="${process.event.key}">`);
         },

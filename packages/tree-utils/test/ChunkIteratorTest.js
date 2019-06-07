@@ -1,10 +1,8 @@
 const expect = require('expect.js');
-const path = require('path');
-const fs = require('fs');
 const { chunkIterator, iteratorOverIterators } = require('../src');
 
 
-describe('TreeIterator', async () => {
+describe('ChunkIterator', async () => {
 
   it(`should iterate over a tree using iterators over subnodes`, async () => {
     return ;

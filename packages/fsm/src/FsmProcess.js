@@ -1,72 +1,89 @@
-// const { treeIterator, asyncTreeIterator, MODE } = require('@statewalker/tree/src/treeIterator');
-const MODE = require('@statewalker/tree/src/MODE');
-const treeIterator = require('@statewalker/tree/src/treeIterator');
-const asyncTreeIterator = require('@statewalker/tree/src/asyncTreeIterator');
+const { treeWalker, treeIterator, asyncTreeIterator, MODE } = require('@statewalker/tree');
 const FsmState = require('./FsmState');
 
 module.exports = class FsmProcess extends FsmState {
 
   constructor(options) {
-    super(options);
+    const stateKey = options.stateKey || 'MAIN';
+    super({ stateKey, ...options });
     this.mode = this.options.mode || MODE.LEAF
     this.before = this.options.before;
     this.after = this.options.after;
+    this.transition = this.options.transition;
     this.setEvent('');
   }
 
   setEvent(key = '', options = {}) {
-    this.event = { key, ...options };
+    return this.event = { key, ...options };
   }
 
-  *run() {
-    for (let s of treeIterator(this._getIteratorOptions())) {
+  start(params) {
+    const it = this.run(params);
+    return (event) => {
+      this.setEvent(event);
+      for (let state of it) return state;
+      return null;
+    }
+  }
+
+  startAsync(params) {
+    const it = this.asyncRun(params);
+    return async (event) => {
+      this.setEvent(event);
+      for await (let state of it) return state;
+      return null;
+    }
+  }
+
+  *run(params) {
+    for (let s of treeIterator(this.getIteratorOptions(params))) {
       yield s.node;
     }
   }
 
-  asyncRun() {
-    const it = asyncTreeIterator(this._getIteratorOptions());
-    const asyncIterator = Symbol.asyncIterator || Symbol.iterator;
-    return {
-      async next() {
-        const item = await it.next();
-        if (item.done) return item;
-        return { value : item.value.node };
-      },
-      [asyncIterator]() { return this; }
+  async *runAsync(params) {
+    for await (let s of asyncTreeIterator(this.getIteratorOptions(params))) {
+      yield s.node;
     }
   }
 
-  _checkState(state) {
-    if (!state) return null;
-    state.process = this;
-    return state;
+  _handleTransition(options) {
+    if (options.next) {
+      options.next.process = this;
+    };
+    if (this.transition && (options.prev || options.next)) this.transition(options);
+    return options.next;
   }
 
-  _getIteratorOptions() {
+  getIteratorOptions(params) {
+    const walkerState = {
+      stack : {
+        push : (state) => this.currentState = state,
+        pop : () => {
+          const state = this.currentState;
+          if (state) { this.currentState = state.parent; }
+          return state;
+        }
+      }
+    };
     return {
       mode : this.mode,
-      state : {
-        stack : {
-          push : (state) => this.state = state,
-          pop : () => {
-            const state = this.state;
-            if (state) { this.state = state.parent; }
-            return state;
-          }
-        }
-      },
+      state : walkerState,
       first : ({ node : parent }) => {
-        const nextState = parent
-          ? parent.getTarget(null, this.event)
+        const event = this.event;
+        const prev = null;
+        const next = parent
+          ? parent.getTargetSubstate(prev, event)
           : this;
-        return this._checkState(nextState);
+        return this._handleTransition({ parent, prev, event, next });
       },
-      next : ({ node : state }) => {
-        const nextState = state.parent
-          ? state.parent.getTarget(state, this.event)
+      next : ({ node : prev }) => {
+        const event = this.event;
+        const parent = prev.parent;
+        const next = parent
+          ? parent.getTargetSubstate(prev, event)
           : null;
-        return this._checkState(nextState);
+        return this._handleTransition({ parent, prev, event, next });
       },
       before : ({ node : state }) => {
         if (this.before) this.before(state);

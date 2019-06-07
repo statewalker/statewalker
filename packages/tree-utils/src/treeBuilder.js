@@ -1,4 +1,4 @@
-const treeWalker = require('./treeWalker');
+const { treeWalker } = require('@statewalker/tree');
 
 module.exports = function treeBuilder({ before, after, state = {}, compare = (a,b)=>a==b }) {
   state.stack = state.stack || [];

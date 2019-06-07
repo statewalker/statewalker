@@ -1,5 +1,4 @@
 const expect = require('expect.js');
-const fs = require('fs');
 const { MODE, treeWalker, asyncTreeIterator, treeIterator } = require('../src');
 
 
