@@ -4,4 +4,5 @@ module.exports = {
   treeWalker : require('./treeWalker'),
   asyncTreeWalker : require('./asyncTreeWalker'),
   asyncTreeIterator : require('./asyncTreeIterator'),
+  walker : require('./walker')
 };
