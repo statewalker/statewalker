@@ -1,12 +1,12 @@
 {
   "name": "@statewalker/tree-utils",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "",
   "main": "index.js",
   "author": "Mikhail Kotelnikov <mikhail.kotelnikov@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@statewalker/tree": "^0.1.0"
+    "@statewalker/tree": "^0.2.0"
   },
   "devDependencies": {
     "expect.js": "^0.3",
