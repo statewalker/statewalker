@@ -3,4 +3,4 @@ tmp
 index0.js
 testing
 webpack
-package-lock.json
+*.log
