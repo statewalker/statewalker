@@ -7,9 +7,10 @@ module.exports = class FsmProcess extends FsmState {
     const stateKey = options.stateKey || 'MAIN';
     super({ stateKey, ...options });
     this.mode = this.options.mode || MODE.LEAF
-    this.before = this.options.before;
-    this.after = this.options.after;
-    this.transition = this.options.transition;
+    const noop = () => {};
+    this.before = this.options.before || this.before || noop;
+    this.after = this.options.after || this.after || noop;
+    this.transition = this.options.transition || this.transition || noop;
     this.setEvent('');
   }
 
@@ -51,7 +52,7 @@ module.exports = class FsmProcess extends FsmState {
     if (options.next) {
       options.next.process = this;
     };
-    if (this.transition && (options.prev || options.next)) this.transition(options);
+    if (options.prev || options.next) this.transition(options);
     return options.next;
   }
 
@@ -85,12 +86,8 @@ module.exports = class FsmProcess extends FsmState {
           : null;
         return this._handleTransition({ parent, prev, event, next });
       },
-      before : ({ node : state }) => {
-        if (this.before) this.before(state);
-      },
-      after : ({ stack, node : state }) => {
-        if (this.after) this.after(state);
-      }
+      before : ({ node : state }) => this.before(state),
+      after : ({ stack, node : state }) => this.after(state)
     }
   }
 }
