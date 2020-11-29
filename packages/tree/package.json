@@ -6,8 +6,8 @@
   "author": "Mikhail Kotelnikov <mikhail.kotelnikov@gmail.com>",
   "license": "ISC",
   "devDependencies": {
-    "expect.js": "^0.3.1",
-    "mocha": "^6.1.4"
+    "expect.js": "^0.3",
+    "mocha": "^8"
   },
   "scripts": {
     "test": "mocha -R spec ./test/index.js"
