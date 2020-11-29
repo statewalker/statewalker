@@ -8,6 +8,6 @@
     "bundle": "lerna exec npm run bundle"
   },
   "devDependencies": {
-    "lerna": "^3.13.1"
+    "lerna": "^3.22.1"
   }
 }
