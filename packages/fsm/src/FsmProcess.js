@@ -36,14 +36,14 @@ module.exports = class FsmProcess extends FsmState {
     }
   }
 
-  *run(params) {
-    for (let s of treeIterator(this.getIteratorOptions(params))) {
+  *run() {
+    for (let s of treeIterator(this.getIteratorOptions())) {
       yield s.node;
     }
   }
 
-  async *runAsync(params) {
-    for await (let s of asyncTreeIterator(this.getIteratorOptions(params))) {
+  async* asyncRun() {
+    for await (let s of asyncTreeIterator(this.getIteratorOptions())) {
       yield s.node;
     }
   }
