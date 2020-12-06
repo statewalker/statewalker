@@ -1,7 +1,7 @@
-const MODE = require('./MODE');
-const walker = require('./walker');
+import { MODE } from './MODE.js';
+import { walker } from './walker.js';
 
-module.exports = function treeWalker({ state = {}, before = (w)=>{}, after = (w)=>{} }) {
+export function treeWalker({ state = {}, before = ()=>{}, after = ()=>{} }) {
   const update = walker(state);
   return (node) => {
     if (state.status & (MODE.LAST | MODE.LEAF )) after(state);

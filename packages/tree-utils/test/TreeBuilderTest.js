@@ -1,5 +1,5 @@
-const expect = require('expect.js');
-const { treeBuilder } = require('../src');
+import expect from 'expect.js';
+import { treeBuilder } from '../src/index.js';
 
 describe('treeBuilder', async () => {
 

@@ -1,7 +1,7 @@
-const { treeWalker, treeIterator, asyncTreeIterator, MODE } = require('@statewalker/tree');
-const FsmState = require('./FsmState');
+import { treeIterator, asyncTreeIterator, MODE } from '@statewalker/tree/index.js';
+import { FsmState } from './FsmState.js';
 
-module.exports = class FsmProcess extends FsmState {
+export class FsmProcess extends FsmState {
 
   constructor(options) {
     const stateKey = options.stateKey || 'MAIN';
@@ -42,7 +42,7 @@ module.exports = class FsmProcess extends FsmState {
     }
   }
 
-  async* asyncRun() {
+  async* runAsync() {
     for await (let s of asyncTreeIterator(this.getIteratorOptions())) {
       yield s.node;
     }
@@ -51,12 +51,12 @@ module.exports = class FsmProcess extends FsmState {
   _handleTransition(options) {
     if (options.next) {
       options.next.process = this;
-    };
+    }
     if (options.prev || options.next) this.transition(options);
     return options.next;
   }
 
-  getIteratorOptions(params) {
+  getIteratorOptions() {
     const walkerState = {
       stack : {
         push : (state) => this.currentState = state,
@@ -87,7 +87,7 @@ module.exports = class FsmProcess extends FsmState {
         return this._handleTransition({ parent, prev, event, next });
       },
       before : ({ node : state }) => this.before(state),
-      after : ({ stack, node : state }) => this.after(state)
+      after : ({ node : state }) => this.after(state)
     }
   }
 }

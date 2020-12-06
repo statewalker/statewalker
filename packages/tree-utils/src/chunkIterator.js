@@ -1,6 +1,6 @@
-const iteratorOverIterators = require('./iteratorOverIterators');
+import { iteratorOverIterators } from './iteratorOverIterators.js';
 
-module.exports = function chunkIterator({ top, dump, load, ...options }) {
+export function chunkIterator({ top, dump, load, ...options }) {
   const newIterator = ({
       value,
       levelDone = false,

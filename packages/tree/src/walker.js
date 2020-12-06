@@ -1,6 +1,6 @@
-const MODE = require('./MODE');
+import { MODE } from './MODE.js';
 
-module.exports = function walker(state = {}) {
+export function walker(state = {}) {
   state.status = state.status || 0;
   state.stack = state.stack || [];
   return (node) => {

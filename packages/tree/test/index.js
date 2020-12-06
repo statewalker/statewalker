@@ -1,1 +1,1 @@
-require('./TreeWalkerTest');
+import './TreeWalkerTest.js';

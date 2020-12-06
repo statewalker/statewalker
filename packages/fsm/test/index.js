@@ -1,1 +1,1 @@
-require('./FsmTest')
+import './FsmTest.js';

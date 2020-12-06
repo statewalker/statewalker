@@ -1,7 +1,7 @@
-const MODE = require('./MODE');
-const asyncTreeWalker = require('./asyncTreeWalker');
+import { MODE } from './MODE.js';
+import { asyncTreeWalker } from './asyncTreeWalker.js';
 
-module.exports = function asyncTreeIterator({ first, next, mode = MODE.ENTER, state = {}, ...options }) {
+export function asyncTreeIterator({ first, next, mode = MODE.ENTER, state = {}, ...options }) {
   const update = asyncTreeWalker({ state, ...options });
   let done = false;
   return {

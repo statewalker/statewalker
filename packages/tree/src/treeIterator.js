@@ -1,7 +1,7 @@
-const MODE = require('./MODE');
-const treeWalker = require('./treeWalker');
+import { MODE } from './MODE.js';
+import { treeWalker } from './treeWalker.js';
 
-module.exports = function* treeIterator({ first, next, mode = MODE.ENTER, state = {}, ...options }) {
+export function* treeIterator({ first, next, mode = MODE.ENTER, state = {}, ...options }) {
   const update = treeWalker({ state, ...options });
   first = first || next;
   while (true) {

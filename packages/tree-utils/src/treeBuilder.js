@@ -1,6 +1,6 @@
-const { treeWalker } = require('@statewalker/tree');
+import { treeWalker } from '@statewalker/tree/index.js';
 
-module.exports = function treeBuilder({ before, after, state = {}, compare = (a,b)=>a==b }) {
+export function treeBuilder({ before, after, state = {}, compare = (a,b)=>a==b }) {
   state.stack = state.stack || [];
   const update = treeWalker({ state, before, after });
   function next(path) {

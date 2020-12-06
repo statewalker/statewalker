@@ -1,5 +1,3 @@
-module.exports = {
-  FsmConfig : require('./FsmConfig'),
-  FsmState : require('./FsmState'),
-  FsmProcess : require('./FsmProcess')
-};
+export * from './FsmConfig.js';
+export * from './FsmState.js';
+export * from './FsmProcess.js';

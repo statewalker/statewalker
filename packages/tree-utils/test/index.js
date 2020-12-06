@@ -1,2 +1,2 @@
-require('./ChunkIteratorTest')
-require('./TreeBuilderTest');
+import './ChunkIteratorTest.js';
+import './TreeBuilderTest.js';

@@ -1,4 +1,4 @@
-module.exports = class FsmState {
+export class FsmState {
 
   constructor(options) {
     this.options = options;
@@ -16,7 +16,7 @@ module.exports = class FsmState {
   getTransitions(keepSegments = false) {
     const index = {};
     let state = this;
-    while (true) {
+    for (;;) {
       const parentState = state.parent;
       if (!parentState) break;
       const parentPathSegments = parentState.pathSegments;

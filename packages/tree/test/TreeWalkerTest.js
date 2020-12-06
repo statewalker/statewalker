@@ -1,5 +1,5 @@
-const expect = require('expect.js');
-const { MODE, treeWalker, asyncTreeIterator, treeIterator } = require('../src');
+import expect from 'expect.js';
+import { MODE, treeWalker, asyncTreeIterator, treeIterator } from '../src/index.js';
 
 
 describe('treeWalker', async () => {

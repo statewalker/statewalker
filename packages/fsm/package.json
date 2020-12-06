@@ -1,20 +1,40 @@
 {
   "name": "@statewalker/fsm",
   "version": "0.2.0",
-  "description": "",
-  "main": "index.js",
-  "author": "Mikhail Kotelnikov <mikhail.kotelnikov@gmail.com>",
-  "license": "ISC",
+  "description": "Utility graph methods (iterators, tree builders etc)",
+  "keywords": [],
+  "homepage": "https://github.com/mkotelnikov/agen",
+  "author": {
+    "name": "Mikhail Kotelnikov",
+    "email": "mikhail.kotelnikov@gmail.com"
+  },
+  "type": "module",
+  "main": "dist/statewalker-fsm.js",
+  "unpkg": "dist/statewalker-fsm.min.js",
+  "jsdelivr": "dist/statewalker-fsm.min.js",
+  "module": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/statewalker/statewalker.git"
+  },
+  "files": [
+    "dist/**/*.js",
+    "src/**/*.js"
+  ],
+  "scripts": {
+    "eslint": "../../node_modules/eslint/bin/eslint.js src",
+    "rollup": "../../node_modules/rollup/dist/bin/rollup -c",
+    "test": "../../node_modules/mocha/bin/mocha -R spec ./test/index.js && npm run eslint",
+    "pretest": "npm run rollup",
+    "prepare": "npm run rollup",
+    "prepublishOnly": "rm -rf dist && npm test",
+    "postpublish": "zip -j dist/statewalker-fsm.zip -- ../../LICENSE README.md dist/statewalker-fsm.js dist/statewalker-fsm.min.js"
+  },
   "dependencies": {
     "@statewalker/tree": "^0.2.0"
   },
-  "devDependencies": {
-    "expect.js": "^0.3",
-    "mocha": "^8"
-  },
-  "scripts": {
-    "test": "mocha -R spec ./test/index.js"
-  },
+  "license": "MIT",
+  "sideEffects": false,
   "publishConfig": {
     "access": "public"
   }

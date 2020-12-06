@@ -1,6 +1,5 @@
-const expect = require('expect.js');
-const { asyncTreeIterator, MODE } = require('@statewalker/tree');
-const { FsmConfig, FsmProcess } = require('../');
+import expect from 'expect.js';
+import { FsmConfig, FsmProcess } from '../index.js';
 
 const main = {
   key : 'MAIN',

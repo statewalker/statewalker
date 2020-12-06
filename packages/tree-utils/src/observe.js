@@ -1,4 +1,4 @@
-module.exports = function observe(initialize=()=>{}) {
+export function observe(initialize=()=>{}) {
   let prev = newPromise();
   prev.resolve();
   let nextPromise = newPromise();

@@ -1,6 +1,5 @@
-const expect = require('expect.js');
-const { chunkIterator, iteratorOverIterators } = require('../src');
-
+import expect from 'expect.js';
+import { chunkIterator, iteratorOverIterators } from '../src/index.js';
 
 describe('ChunkIterator', async () => {
 

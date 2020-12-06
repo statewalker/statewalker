@@ -1,4 +1,4 @@
-const MODE = {
+export const MODE = {
   LEAF : 1,
   LAST : 2,
   FIRST : 4,
@@ -6,4 +6,3 @@ const MODE = {
 }
 MODE.ENTER = MODE.FIRST | MODE.NEXT;
 MODE.EXIT = MODE.LAST | MODE.LEAF;
-module.exports = MODE;

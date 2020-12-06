@@ -1,4 +1,4 @@
-module.exports = class FsmConfig {
+export class FsmConfig {
 
   static buildDescriptor(config) {
     const { transitions = [], states = {}, ...params } = config;
@@ -33,4 +33,4 @@ module.exports = class FsmConfig {
     return descriptor;
   }
 
-};
+}
