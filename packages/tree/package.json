@@ -1,6 +1,6 @@
 {
   "name": "@statewalker/tree",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Graph traversal libraries",
   "keywords": [],
   "homepage": "https://github.com/mkotelnikov/agen",
@@ -29,8 +29,6 @@
     "prepare": "npm run rollup",
     "prepublishOnly": "rm -rf dist && npm test",
     "postpublish": "zip -j dist/statewalker-tree.zip -- ../../LICENSE README.md dist/statewalker-tree.js dist/statewalker-tree.min.js"
-  },
-  "dependencies": {
   },
   "license": "MIT",
   "sideEffects": false,
