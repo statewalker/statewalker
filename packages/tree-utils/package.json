@@ -1,6 +1,6 @@
 {
   "name": "@statewalker/tree-utils",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Utility graph methods (iterators, tree builders etc)",
   "keywords": [],
   "homepage": "https://github.com/mkotelnikov/agen",
@@ -31,7 +31,7 @@
     "postpublish": "zip -j dist/statewalker-tree-utils.zip -- ../../LICENSE README.md dist/statewalker-tree-utils.js dist/statewalker-tree-utils.min.js"
   },
   "dependencies": {
-    "@statewalker/tree": "^0.3.0"
+    "@statewalker/tree": "^0.3.1"
   },
   "license": "MIT",
   "sideEffects": false,
