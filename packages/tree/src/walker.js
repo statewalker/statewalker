@@ -13,8 +13,9 @@ export function walker(state = {}) {
       state.status = prev ? MODE.NEXT : MODE.FIRST;
     } else {
       state.node = state.stack.pop();
-      state.status = state.node ? prev ? MODE.LAST : MODE.LEAF : 0;
+      state.status = prev ? MODE.LAST : MODE.LEAF;
     }
+    if (!state.node) state.status = 0;
     return state;
   }
 }
