@@ -11,30 +11,20 @@ export class FsmProcess extends FsmState {
     this.before = this.options.before || this.before || noop;
     this.after = this.options.after || this.after || noop;
     this.transition = this.options.transition || this.transition || noop;
-    this.setEvent('');
+    this.context = {
+      stack : {
+        push : (state) => { this.parentState = state; },
+        pop : () => {
+          const state = this.parentState;
+          if (state) { this.parentState = state.parent; }
+          return state;
+        }
+      }
+    };
   }
 
-  setEvent(key = '', options = {}) {
-    return this.event = { key, ...options };
-  }
-
-  start(params) {
-    const it = this.run(params);
-    return (event) => {
-      this.setEvent(event);
-      for (let state of it) return state;
-      return null;
-    }
-  }
-
-  startAsync(params) {
-    const it = this.asyncRun(params);
-    return async (event) => {
-      this.setEvent(event);
-      for await (let state of it) return state;
-      return null;
-    }
-  }
+  get eventKey() { return this._getKey(this.event); }
+  get currentState() { return this.context.node; }
 
   *run() {
     for (let s of treeIterator(this.getIteratorOptions())) {
@@ -57,19 +47,9 @@ export class FsmProcess extends FsmState {
   }
 
   getIteratorOptions() {
-    const walkerState = {
-      stack : {
-        push : (state) => this.currentState = state,
-        pop : () => {
-          const state = this.currentState;
-          if (state) { this.currentState = state.parent; }
-          return state;
-        }
-      }
-    };
     return {
       mode : this.mode,
-      state : walkerState,
+      state : this.context,
       first : ({ node : parent }) => {
         const event = this.event;
         const prev = null;
