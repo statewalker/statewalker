@@ -1,11 +1,12 @@
-import { treeIterator, asyncTreeIterator, MODE } from '@statewalker/tree/index.js';
+import { treeWalkerStep, asyncTreeWalkerStep, MODE } from '@statewalker/tree/index.js';
+import { toTreeIterator, toAsyncTreeIterator } from '@statewalker/tree/index.js';
+
 import { FsmState } from './FsmState.js';
 
 export class FsmProcess extends FsmState {
 
   constructor(options) {
-    const stateKey = options.stateKey || 'MAIN';
-    super({ stateKey, ...options });
+    super(options);
     this.mode = this.options.mode || MODE.LEAF
     const noop = () => {};
     this.before = this.options.before || this.before || noop;
@@ -21,20 +22,29 @@ export class FsmProcess extends FsmState {
         }
       }
     };
+    const runOptions = {
+      context : this.context,
+      first : ({ node }) => this._nextState({ parent : node, init : this }),
+      next : ({ node }) => this._nextState({ parent : node.parent, prev : node }),
+      before : ({ node : state }) => this.before(state),
+      after : ({ node : state }) => this.after(state)
+    };
+    this.nextStep = treeWalkerStep(runOptions);
+    this.nextAsyncStep = asyncTreeWalkerStep(runOptions);
   }
 
   get eventKey() { return this._getKey(this.event); }
   get currentState() { return this.context.node; }
 
   *run() {
-    for (let s of treeIterator(this.getIteratorOptions())) {
-      yield s.node;
+    for (let context of toTreeIterator(this.nextStep, this.mode)) {
+      yield context.node;
     }
   }
 
   async* runAsync() {
-    for await (let s of asyncTreeIterator(this.getIteratorOptions())) {
-      yield s.node;
+    for await (let context of toAsyncTreeIterator(this.nextAsyncStep, this.mode)) {
+      yield context.node;
     }
   }
 
@@ -46,28 +56,46 @@ export class FsmProcess extends FsmState {
     return options.next;
   }
 
-  getIteratorOptions() {
-    return {
-      mode : this.mode,
-      state : this.context,
-      first : ({ node : parent }) => {
-        const event = this.event;
-        const prev = null;
-        const next = parent
-          ? parent.getTargetSubstate(prev, event)
-          : this;
-        return this._handleTransition({ parent, prev, event, next });
-      },
-      next : ({ node : prev }) => {
-        const event = this.event;
-        const parent = prev.parent;
-        const next = parent
-          ? parent.getTargetSubstate(prev, event)
-          : null;
-        return this._handleTransition({ parent, prev, event, next });
-      },
-      before : ({ node : state }) => this.before(state),
-      after : ({ node : state }) => this.after(state)
-    }
+  _newState(parent, stateKey, descriptor) {
+    return new FsmState({ stateKey, parent, descriptor });
   }
+
+  /**
+   * Returns a state descriptor for the specified transition or null if there
+   * is no such a target transitions.
+   */
+  _getSubstateDescriptor(state, substateKey) {
+    let descriptor, implicitDescriptor;
+    for (let s = state; s && (!descriptor); s = s.parent) {
+      descriptor = s.descriptor.getSubstateDescriptor(substateKey);
+      implicitDescriptor = implicitDescriptor || descriptor;
+      if (descriptor && descriptor.implicit) descriptor = null;
+    }
+    descriptor = descriptor || implicitDescriptor;
+    return descriptor;
+  }
+
+  _nextState({ parent, prev, init }) {
+    const event = this.event;
+    let next = init, transition;
+    if (parent) {
+      const eventKey = this._getKey(event);
+      const stateKey = this._getKey(prev);
+      transition = parent.descriptor.getTransition(stateKey, eventKey);
+      const descriptor = transition
+        ? this._getSubstateDescriptor(parent, transition.targetStateKey)
+        : null;
+      next = descriptor
+        ? this._newState(parent, transition.targetStateKey, descriptor)
+        : null;
+    }
+    return this._handleTransition({
+      parent,
+      prev,
+      event,
+      next,
+      transition
+    });
+  }
+
 }

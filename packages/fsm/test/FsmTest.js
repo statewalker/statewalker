@@ -1,9 +1,8 @@
 import expect from 'expect.js';
-import { FsmConfig, FsmProcess } from '../index.js';
+import { buildDescriptor, FsmProcess } from '../index.js';
 
 const main = {
   key : 'MAIN',
-  root : true,
   transitions : [
     ['', '*', 'LOGIN'],
     ['LOGIN', 'ok', 'MAIN_VIEW'],
@@ -133,6 +132,43 @@ describe('Fsm', async () => {
   test(`sync: should iterate over states and perform required state transitions`, { ...options, method : 'run' });
   test(`async: should iterate over states and perform required state transitions`, { ...options, method : 'runAsync' });
 
+  function test(msg, { descriptor, events, control, traces, method = 'run' }) {
+    it(msg, async () => {
+      const testTraces = [];
+      const print = (state, msg) => {
+        let shift = '';
+        while (state) {
+          state = state.parent;
+          shift += '  ';
+        }
+        testTraces.push(shift + msg);
+      }
+      const process = new FsmProcess({
+        descriptor : buildDescriptor(descriptor),
+        before(state) {
+          print(state, `<${state.key} event="${process.eventKey}">`);
+        },
+        after(state) {
+          print(state, `</${state.key}>`);
+        }
+      });
+
+      let i = 0;
+      let test = [];
+      let prevEvent = '';
+      for await (let s of process[method]()) {
+        test.push(`-[${process.eventKey}]->${s.path}`);
+        if (i >= events.length) break;
+        prevEvent = events[i++];
+        print(s, ` [${prevEvent}]`);
+        process.event = { key : prevEvent };
+      }
+      expect(test).to.eql(control);
+      expect(testTraces).to.eql(traces);
+    })
+  }
+
+
   describe(`test process interruption/continuation`, () => {
     const descriptor = {
       key : 'Selection',
@@ -185,9 +221,21 @@ describe('Fsm', async () => {
     const stateHandler = newProcessHandler(checkProcessHandlers(stateHandlers), printer);
     // const transitionsHandler = newProcessHandler(checkProcessHandlers(stateHandlers), printer);
     const process = new FsmProcess({
-      descriptor : FsmConfig.buildDescriptor(descriptor),
+      descriptor : buildDescriptor(descriptor),
       before : stateHandler.before,
       after : stateHandler.after,
+      transition : ({ prev, event, next }) => {
+        const getKey = (s, d='') => s ? s.key : d;
+        const getStack = (s, d) => {
+          let stack = [];
+          while (true) {
+            stack.unshift(getKey(s, d));
+            if (!s || s.parent) break;
+            s = s.parent;
+          }
+          return stack.join('/');
+        }
+      },
       type : 'shp'
     });
 
@@ -195,7 +243,7 @@ describe('Fsm', async () => {
     it(`process starts and runs while event is defined`, async () => {
       await run(process);
       control.push(
-        '<MAIN event="">',
+        '<Selection event="">',
         '  <Wait event="">',
         '   step 1'
       );
@@ -265,7 +313,7 @@ describe('Fsm', async () => {
       await run(process, { key : 'exit' });
       control.push(
         '  </Wait>',
-        '</MAIN>'
+        '</Selection>'
       );
       expect(printer.stack).to.eql(control);
     })
@@ -348,39 +396,4 @@ describe('Fsm', async () => {
 
   })
 
-  function test(msg, { descriptor, events, control, traces, method = 'run' }) {
-    it(msg, async () => {
-      const testTraces = [];
-      const print = (state, msg) => {
-        let shift = '';
-        while (state) {
-          state = state.parent;
-          shift += '  ';
-        }
-        testTraces.push(shift + msg);
-      }
-      const process = new FsmProcess({
-        descriptor : FsmConfig.buildDescriptor(descriptor),
-        before(state) {
-          print(state, `<${state.key} event="${process.eventKey}">`);
-        },
-        after(state) {
-          print(state, `</${state.key}>`);
-        }
-      });
-
-      let i = 0;
-      let test = [];
-      let prevEvent = '';
-      for await (let s of process[method]()) {
-        test.push(`-[${process.eventKey}]->${s.path}`);
-        if (i >= events.length) break;
-        prevEvent = events[i++];
-        print(s, ` [${prevEvent}]`);
-        process.event = { key : prevEvent };
-      }
-      expect(test).to.eql(control);
-      expect(testTraces).to.eql(traces);
-    })
-  }
 })
