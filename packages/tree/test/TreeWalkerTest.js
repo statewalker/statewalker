@@ -11,7 +11,7 @@ describe('treeWalker', async () => {
       trace.push(stack.map(_ => ' ').join('') + msg);
     }
     const update = treeWalker({
-      state : { stack },
+      context : { stack },
       before({ node }) {
         print(`<${node}>`);
       },
@@ -202,10 +202,10 @@ describe('treeIterator: should be able to iterate over a sync tree', async () =>
     ]
   }));
 
-  function newTreeIterator({ root, mode, state, print }) {
+  function newTreeIterator({ root, mode, context, print }) {
     return treeIterator({
       mode,
-      state,
+      context,
       first : ({ node }) => {
         if (!node) return root;
         return (node.children || [])[0];
@@ -220,19 +220,19 @@ describe('treeIterator: should be able to iterate over a sync tree', async () =>
         }
         return children[idx + 1];
       },
-      before(state) { print(`<${state.node.name}>`); },
-      after(state) { print(`</${state.node.name}>`); }
+      before(context) { print(`<${context.node.name}>`); },
+      after(context) { print(`</${context.node.name}>`); }
     });
   }
 
   function test({ mode, root, control, traces }) {
-    const state = { stack : [], status : 0 };
+    const context = { stack : [], status : 0 };
     const trace = [];
     const print = (msg) => {
-      const str = state.stack.map(_ => '  ').join('') + msg;
+      const str = context.stack.map(_ => '  ').join('') + msg;
       trace.push(str);
     }
-    const it = newTreeIterator({ root, mode, state, print })
+    const it = newTreeIterator({ root, mode, context, print })
     const list = [];
     for (let s of it) {
       const name = s.node.name;
@@ -244,11 +244,11 @@ describe('treeIterator: should be able to iterate over a sync tree', async () =>
   }
 })
 
-function newAsyncTreeIterator({ root, mode, state, print }) {
+function newAsyncTreeIterator({ root, mode, context, print }) {
   async function wait(t = 100) { return new Promise(r => setTimeout(r, t))}
   return asyncTreeIterator({
     mode,
-    state,
+    context,
     async first({ node }) {
       await wait(2);
       if (!node) return root;
@@ -265,13 +265,13 @@ function newAsyncTreeIterator({ root, mode, state, print }) {
       }
       return children[idx + 1];
     },
-    async before(state) {
+    async before(context) {
       await wait(1);
-      print(`<${state.node.name}>`);
+      print(`<${context.node.name}>`);
     },
-    async after(state) {
+    async after(context) {
       await wait(1);
-      print(`</${state.node.name}>`);
+      print(`</${context.node.name}>`);
     }
   });
 }
@@ -451,13 +451,13 @@ describe('asyncTreeIterator: should be able to iterate over an async tree', asyn
   }));
   async function test({ mode, nodes, control, traces }) {
     const trace = [];
-    const state = { stack : [] };
+    const context = { stack : [] };
     const print = (msg) => {
-      const str = state.stack.map(_ => '  ').join('') + msg;
+      const str = context.stack.map(_ => '  ').join('') + msg;
       // console.log(str);
       trace.push(str);
     }
-    const it = newAsyncTreeIterator({ mode, root, state, print });
+    const it = newAsyncTreeIterator({ mode, root, context, print });
     const list = [];
     for await (let s of it) {
       print(`[${s.node.name}]`);
@@ -580,14 +580,14 @@ describe('asyncTreeIterator: should be able to suspend / resume iterations', asy
 
   async function test({ mode, nodes, control, traces }) {
     const trace = [];
-    let state = { stack : [], status : 0 };
+    let context = { stack : [], status : 0 };
     function print(s) {
-      const line = state.stack.map(_ => '  ').join('') + s;
+      const line = context.stack.map(_ => '  ').join('') + s;
       // console.log(line);
       trace.push(line);
     }
     const list = [];
-    let it = newAsyncTreeIterator({ mode, root, state, print });
+    let it = newAsyncTreeIterator({ mode, root, context, print });
     const n = Math.round(control.length / 2);
     for await (let s of it) {
       print(`[${s.node.name}]`);
@@ -598,9 +598,9 @@ describe('asyncTreeIterator: should be able to suspend / resume iterations', asy
     expect(list.length < control.length).to.be(true);
     expect(list).to.eql(control.slice(0, n));
 
-    // Copy the state to be sure that it is a new object:
-    state = JSON.parse(JSON.stringify(state));
-    it = newAsyncTreeIterator({ mode, root, state, print });
+    // Copy the context to be sure that it is a new object:
+    context = JSON.parse(JSON.stringify(context));
+    it = newAsyncTreeIterator({ mode, root, context, print });
     for await (let s of it) {
       print(`[${s.node.name}]`);
       list.push(s.node.name);
@@ -617,12 +617,12 @@ describe(`asyncTreeIterator: should be able to async load tree nodes`, async () 
     const root = 'root';
     const index = {};
     const control = [root];
-    const state = { stack : [] };
+    const context = { stack : [] };
     const print = (s) => {
-      // console.log(state.stack.map(_ => ' ').join(''), s);
+      // console.log(context.stack.map(_ => ' ').join(''), s);
     }
     const update = treeWalker({
-      state,
+      context,
       before({ stack, node }){
         const parent = stack[stack.length - 1] || root;
         const list = index[parent] = index[parent] || [];
@@ -666,11 +666,11 @@ describe(`asyncTreeIterator: should be able to async load tree nodes`, async () 
       return newNode(child);
     }
 
-    const state = { stack : [] };
+    const context = { stack : [] };
     const trace = [];
     function print(s) {
-      const line = state.stack.map(_ => '  ').join('') + s;
-      // const line = state.stack.map(_ => `[${getName(_)}]`).join('/') + ':' + s;
+      const line = context.stack.map(_ => '  ').join('') + s;
+      // const line = context.stack.map(_ => `[${getName(_)}]`).join('/') + ':' + s;
       // console.log(line);
       trace.push(line);
     }
@@ -685,7 +685,7 @@ describe(`asyncTreeIterator: should be able to async load tree nodes`, async () 
     const before = async (s) => print(`<${getName(s.node)}>`);
     const after = async (s) => print(`</${getName(s.node)}>`);
 
-    let it = asyncTreeIterator({ first, next, before, after, state });
+    let it = asyncTreeIterator({ first, next, before, after, context });
     let i = 0;
     for await (let s of it) {
       print(`[${getName(s.node)}]`);

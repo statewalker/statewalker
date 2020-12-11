@@ -1,4 +1,5 @@
 export const MODE = {
+  NONE : 0,
   LEAF : 1,
   LAST : 2,
   FIRST : 4,

@@ -1,21 +1,21 @@
 import { MODE } from './MODE.js';
 
-export function walker(state = {}) {
-  state.status = state.status || 0;
-  state.stack = state.stack || [];
+export function walker(context = {}) {
+  context.status = context.status || MODE.NONE;
+  context.stack = context.stack || [];
   return (node) => {
-    if (state.status & (MODE.FIRST | MODE.NEXT)) {
-      state.stack.push(state.node);
+    if (context.status & MODE.ENTER) {
+      context.stack.push(context.node);
     }
-    const prev = state.status & (MODE.LEAF | MODE.LAST);
+    const prev = context.status & MODE.EXIT;
     if (node) {
-      state.node = node;
-      state.status = prev ? MODE.NEXT : MODE.FIRST;
+      context.node = node;
+      context.status = prev ? MODE.NEXT : MODE.FIRST;
     } else {
-      state.node = state.stack.pop();
-      state.status = prev ? MODE.LAST : MODE.LEAF;
+      context.node = context.stack.pop();
+      context.status = prev ? MODE.LAST : MODE.LEAF;
     }
-    if (!state.node) state.status = 0;
-    return state;
+    if (!context.node) context.status = MODE.NONE;
+    return context;
   }
 }
