@@ -1,10 +1,10 @@
 import { treeWalker } from '@statewalker/tree/index.js';
 
-export function treeBuilder({ before, after, state = {}, compare = (a,b)=>a==b }) {
-  state.stack = state.stack || [];
-  const update = treeWalker({ state, before, after });
+export function treeBuilder({ before, after, context = {}, compare = (a,b)=>a==b }) {
+  context.stack = context.stack || [];
+  const update = treeWalker({ context, before, after });
   function next(path) {
-    const stack = state.stack;
+    const stack = context.stack;
     const stackLen = stack.length;
     const len = Math.min(path.length, stackLen);
     let i;

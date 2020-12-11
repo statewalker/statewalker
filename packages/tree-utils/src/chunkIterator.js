@@ -61,24 +61,24 @@ export function chunkIterator({ top, dump, load, ...options }) {
   };
   const restoreIterator = (dump) => dump ? newIterator(dump) : null;
 
-  const state = { stack : [] };
+  const context = { stack : [] };
   if (dump) {
-    state.status = dump.status;
-    state.node = restoreIterator(dump.iterators.pop());
+    context.status = dump.status;
+    context.node = restoreIterator(dump.iterators.pop());
     for (let itr of dump.iterators) {
-      state.stack.push(restoreIterator(itr));
+      context.stack.push(restoreIterator(itr));
     }
   }
-  const it = iteratorOverIterators({ top, state, newIterator, ...options });
+  const it = iteratorOverIterators({ top, context, newIterator, ...options });
   it.dump = async () => {
     const dump =  {
-      status : state.status,
+      status : context.status,
       iterators : []
     }
-    for (let n of state.stack) {
+    for (let n of context.stack) {
       dump.iterators.push(await dumpIterator(n));
     }
-    dump.iterators.push(await dumpIterator(state.node));
+    dump.iterators.push(await dumpIterator(context.node));
     return dump;
   }
   return it;

@@ -5,7 +5,7 @@ describe('treeBuilder', async () => {
 
   it('should build trees from paths', () => {
     // const print = (s) => {
-    //   console.log(state.stack.map(_ => ' ').join(''), s);
+    //   console.log(context.stack.map(_ => ' ').join(''), s);
     // }
     const compare = (a, b)=>(a.path === b.path && a.dir === b.dir);
     const list = [];
