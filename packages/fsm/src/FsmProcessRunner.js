@@ -22,7 +22,7 @@ export class FsmProcessRunner {
     this.index[key] = descriptor;
   }
 
-  startProcess(key, emit) {
+  startProcess(key, emit, mode = MODE.LEAF) {
     const descriptor = this.index[key];
     async function handle(actions) {
       let errors = [];
@@ -64,27 +64,26 @@ export class FsmProcessRunner {
         state._outputEventInfo.resolve();
         return state._outputEventInfo.promise;
       },
-      onEvent : async (process) => this._enqueueProcess(process)
+      onEvent : async (process) => {
+        const processId = process._id;
+        if (processId in this._running) return ;
+        this._running[processId] = true;
+        try {
+          while (!process.suspended) {
+            const { status } = await process.nextAsyncStep();
+            if (!status) { delete this._processes[processId]; break; }
+            if (status & process.mode) break;
+          }
+        } finally {
+          delete this._running[processId];
+        }
+      }
     });
     const process = new FsmProcess(config);
+    process.mode = mode;
     process._id = this._newId('process-');
     this._processes[process._id] = process;
     return process;
-  }
-
-  async _enqueueProcess(process) {
-    const processId = process._id;
-    if (processId in this._running) return ;
-    this._running[processId] = true;
-    try {
-      while (!process.suspended) {
-        const { status } = await process.nextAsyncStep();
-        if (!status) { delete this._processes[processId]; break; }
-        if (status & MODE.LEAF) break;
-      }
-    } finally {
-      delete this._running[processId];
-    }
   }
 
   _newId(prefix = '') {
