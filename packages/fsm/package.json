@@ -19,7 +19,8 @@
   },
   "files": [
     "dist/**/*.js",
-    "src/**/*.js"
+    "src/**/*.js",
+    "index.js"
   ],
   "scripts": {
     "eslint": "../../node_modules/eslint/bin/eslint.js src",
