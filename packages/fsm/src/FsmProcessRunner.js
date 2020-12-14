@@ -38,7 +38,7 @@ export class FsmProcessRunner {
         const after = [];
         let resolve;
         const promise = new Promise(r => resolve = r);
-        const intent = {
+        const outputEvent = {
           key : state.key,
           promise,
           before(action) { before.push(action); },
@@ -46,20 +46,23 @@ export class FsmProcessRunner {
           state,
           process : state.process
         }
+        state._outputEventInfo = { activated : false, before, after, promise, resolve };
         try {
-          emit(state.key, intent);
-          state._intentInfo = { before, after, promise, resolve };
-          const errors = await handle(state._intentInfo.before);
+          emit(state.key, outputEvent);
+          state._outputEventInfo.activated = true;
+          const errors = await handle(state._outputEventInfo.before);
           if (errors.length) state.process.setErrors(...errors);
         } catch (error) {
           state.process.setError(error);
         }
       },
       after : async(state) => {
-        const errors = await handle(state._intentInfo.after);
-        if (errors.length) state.process.setErrors(...errors);
-        state._intentInfo.resolve();
-        return state._intentInfo.promise;
+        if (state._outputEventInfo.activated) {
+          const errors = await handle(state._outputEventInfo.after);
+          if (errors.length) state.process.setErrors(...errors);
+        }
+        state._outputEventInfo.resolve();
+        return state._outputEventInfo.promise;
       },
       onEvent : async (process) => this._enqueueProcess(process)
     });
