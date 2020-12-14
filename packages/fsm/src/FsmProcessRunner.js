@@ -9,6 +9,7 @@ export class FsmProcessRunner {
     this.options = options;
     this.index = {};
     this._processes = {};
+    this._running = {};
   }
 
   registerProcess(key, descriptor) {
@@ -33,7 +34,6 @@ export class FsmProcessRunner {
     const config = new FsmProcessConfig({
       descriptor,
       before : async(state) => {
-        // const deferred = state._deferred = newDeferred();
         const before = [];
         const after = [];
         let resolve;
@@ -46,11 +46,14 @@ export class FsmProcessRunner {
           state,
           process : state.process
         }
-        emit('*', intent);
-        emit(state.key, intent);
-        state._intentInfo = { before, after, promise, resolve };
-        const errors = await handle(before);
-        if (errors.length) state.process.setErrors(...errors);
+        try {
+          emit(state.key, intent);
+          state._intentInfo = { before, after, promise, resolve };
+          const errors = await handle(state._intentInfo.before);
+          if (errors.length) state.process.setErrors(...errors);
+        } catch (error) {
+          state.process.setError(error);
+        }
       },
       after : async(state) => {
         const errors = await handle(state._intentInfo.after);
@@ -67,10 +70,17 @@ export class FsmProcessRunner {
   }
 
   async _enqueueProcess(process) {
-    while (!process.suspended) {
-      const { status } = await process.nextAsyncStep();
-      if (!status) { delete this._processes[process._id]; break; }
-      if (status & MODE.LEAF) break;
+    const processId = process._id;
+    if (processId in this._running) return ;
+    this._running[processId] = true;
+    try {
+      while (!process.suspended) {
+        const { status } = await process.nextAsyncStep();
+        if (!status) { delete this._processes[processId]; break; }
+        if (status & MODE.LEAF) break;
+      }
+    } finally {
+      delete this._running[processId];
     }
   }
 

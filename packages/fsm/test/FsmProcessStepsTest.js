@@ -27,7 +27,10 @@ describe(`test access to state information`, () => {
     const events = new EventEmitter();
     const core = new FsmProcessRunner();
     core.registerProcess(descriptor);
-    const process = core.startProcess('Selection', events.emit.bind(events));
+    const process = core.startProcess('Selection', (eventKey, event) => {
+      events.emit('*', event);
+      events.emit(eventKey, event);
+    });
     expect(process.started).to.be(false);
     expect(process.finished).to.be(false);
     const traces = [];
