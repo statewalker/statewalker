@@ -23,11 +23,13 @@ describe(`test access to state information`, () => {
       }
     ]
   }
-  it(`should...`, async () => {
+  it(`should be able to interrupt/continue the process`, async () => {
     const events = new EventEmitter();
     const core = new FsmProcessRunner();
     core.registerProcess(descriptor);
     const process = core.startProcess('Selection', events.emit.bind(events));
+    expect(process.started).to.be(false);
+    expect(process.finished).to.be(false);
     const traces = [];
     const print = (state, ...args) => {
       let shift = '';
@@ -36,9 +38,9 @@ describe(`test access to state information`, () => {
       }
       traces.push([shift, ...args].join(''));
     }
-    events.on('tick:begin', (process) => print(process.currentState, 'BEGIN PROCESS STEPS'));
-    events.on('tick:end', (process) => print(process.currentState, 'END PROCESS STEPS'));
-    events.on('tick:pause', (process) => print(process.currentState, 'PROCESS PAUSE'));
+    // events.on('tick:begin', (process) => print(process.currentState, 'BEGIN PROCESS STEPS'));
+    // events.on('tick:end', (process) => print(process.currentState, 'END PROCESS STEPS'));
+    // events.on('tick:pause', (process) => print(process.currentState, 'PROCESS PAUSE'));
 
     events.on('*', ({ key, before, after, state, process }) => {
       before(() => { print(state, `<${key} event="${process.event ? process.event.key : ''}">`); });
@@ -52,7 +54,12 @@ describe(`test access to state information`, () => {
       // next.pause();
     })
 
+    expect(process.started).to.be(false);
+    expect(process.finished).to.be(false);
+
     await process.setEvent('abc');
+    expect(process.started).to.be(true);
+    expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('NonSelected');
     expect(process.currentState.getEventKeys()).to.eql(['*', 'error', 'select']);
     expect(process.currentState.acceptsEvent('clear')).to.be(false);
@@ -66,6 +73,8 @@ describe(`test access to state information`, () => {
     ]);
 
     await process.setEvent('select');
+    expect(process.started).to.be(true);
+    expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('UpdateSelection');
     expect(process.currentState.getEventKeys()).to.eql(['*', 'clear', 'error', 'select']);
     expect(process.currentState.acceptsEvent('clear')).to.be(true);
@@ -82,6 +91,8 @@ describe(`test access to state information`, () => {
     ]);
 
     await process.setEvent('error');
+    expect(process.started).to.be(true);
+    expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('HandleError');
     expect(process.currentState.getEventKeys()).to.eql(['*', 'fixed']);
     expect(process.currentState.acceptsEvent('clear')).to.be(false);
@@ -100,6 +111,22 @@ describe(`test access to state information`, () => {
       '    </Selected>',
       '    <HandleError event="error">'
     ]);
-  })
 
+    await process.setEvent('exit');
+    expect(process.started).to.be(true);
+    expect(process.finished).to.be(true);
+    expect(process.currentState).to.be(undefined);
+    expect(traces).to.eql([
+      '  <Selection event="abc">',
+      '    <NonSelected event="abc">',
+      '    </NonSelected>',
+      '    <Selected event="select">',
+      '      <UpdateSelection event="error">',
+      '      </UpdateSelection>',
+      '    </Selected>',
+      '    <HandleError event="error">',
+      '    </HandleError>',
+      '  </Selection>'
+    ]);
+  })
 });

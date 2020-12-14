@@ -1,5 +1,5 @@
 import { asyncTreeWalkerStep, toAsyncTreeIterator } from '@statewalker/tree/index.js';
-import { treeWalkerStep, toTreeIterator } from '@statewalker/tree/index.js'; 
+import { treeWalkerStep, toTreeIterator } from '@statewalker/tree/index.js';
 
 import { FsmEvent } from './FsmEvent.js';
 import { FsmState } from './FsmState.js';
@@ -15,7 +15,7 @@ export class FsmProcess extends FsmState {
     if (!(this.config instanceof FsmProcessConfig)) throw new Error(`Bad process configuration type`);
     this.context = {
       stack : {
-        push : (state) => { this.parentState = state; },
+        push : (state) => { this._started = true; this.parentState = state; },
         pop : () => {
           const state = this.parentState;
           if (state) { this.parentState = state.parent; }
@@ -42,10 +42,18 @@ export class FsmProcess extends FsmState {
     return this.config.onEventUpdate(this);
   }
   get eventKey() { return this.event ? this.event.key : ''; }
+
   suspend() { this.setEvent(undefined); }
+
   setError(error) { this.setEvent('error', { error }); }
+
   setErrors(...errors) { this.setEvent('error', { errors }); }
+
   get suspended() { return !this._event; }
+
+  get started() { return !!this._started; }
+
+  get finished() { return this.started && !this.context.status; }
 
   get currentState() { return this.context.node; }
 
@@ -77,6 +85,7 @@ export class FsmProcess extends FsmState {
   }
 
   _nextState({ parent, prev}) {
+    if (!parent) return null;
     const event = this.event;
     const eventKey = this._getKey(event);
     const stateKey = this._getKey(prev);
