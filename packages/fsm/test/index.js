@@ -1,2 +1,4 @@
+import './FsmProcessStepsTest.js';
 import './FsmDescriptorsTest.js';
-import './FsmTest.js';
+import './FsmProcessTest.js';
+import './FsmProcessContinuationTest.js';

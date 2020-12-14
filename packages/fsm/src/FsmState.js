@@ -1,10 +1,21 @@
+import { FsmStateConfig } from './FsmStateConfig.js';
+
 export class FsmState {
 
-  constructor(options) {
-    this.options = options;
-    this.parent = this.options.parent;
-    this.descriptor = this.options.descriptor;
+  constructor(config) {
+    if (!(config instanceof FsmStateConfig)) throw new Error(`Bad state configuration`);
+    this.config = config;
   }
+
+  get key() { return this.config.key; }
+
+  get process() { return this._process; }
+  _setProcess(process) { this._process = process; }
+
+  get parent() { return this._parent; }
+  _setParentState(parent) { this._parent = parent; }
+
+  get descriptor() { return this.config.descriptor; }
 
   getPathSegments() { return [...this.pathSegments]; }
 
@@ -20,55 +31,58 @@ export class FsmState {
 
   _toPath(segments = []) { return '/' + segments.join('/') }
 
-  get key() { return this.options.stateKey || this.descriptor.key; }
-
-
   /**
    * Returns an index of transitions from this state. The resulting object
    * contains event keys with the corresponding path to the target state.
    */
   getTransitions(keepSegments = false) {
-    const index = {};
-    let state = this;
-    for (;;) {
-      const parentState = state.parent;
-      if (!parentState) break;
+    const result = {};
+    const transitionsIndex = this._getTransitions();
+    for (let [eventKey, { parentState, transition } ] of Object.entries(transitionsIndex)) {
       const parentPathSegments = parentState.pathSegments;
-      let transitions = parentState.descriptor.getTransitions(state.key);
-      for (let [eventKey, target] of Object.entries(transitions)) {
-        if (eventKey in index) continue;
-        const path = [...parentPathSegments, target.key];
-        index[eventKey] = keepSegments ? path : this._toPath(path);
-      }
-      state = parentState;
+      const path = [...parentPathSegments, transition.targetStateKey];
+      result[eventKey] = keepSegments ? path : this._toPath(path);
     }
-    return index;
-  }
-
-  /**
-   * Returns an index of all transitions from this state.
-   */
-  _getTransitions() {
-    const index = {};
-    let state = this;
-    for (;;) {
-      const parentState = state.parent;
-      if (!parentState) break;
-      let transitions = parentState.descriptor.getTransitions(state.key);
-      // Note: "(index, transitions, index)" done in purpose!
-      // We don't want to overload already defined transitions.
-      Object.assign(index, transitions, index);
-      state = parentState;
-    }
-    return index;
+    return result;
   }
 
   /**
    * Returns an ordered list of all event keys available in this state.
    */
   getEventKeys() {
+    const transitionsIndex = this._getTransitions();
+    return Object.keys(transitionsIndex).sort();
+  }
+
+  /**
+   * Returns true if this state accepts an event with the given key.
+   */
+  acceptsEvent(eventKey) {
     const transitions = this._getTransitions();
-    return Object.keys(transitions).sort();
+    return eventKey in transitions;
+  }
+
+  /**
+   * Returns an index of all transitions from this state.
+   */
+  _getTransitions() {
+    if (!this._transitionsIndex) {
+      const index = this._transitionsIndex = {};
+      let state = this;
+      for (;;) {
+        const parentState = state.parent;
+        if (!parentState) break;
+        let transitions = parentState.descriptor.getTransitions(state.key);
+        for (let transition of Object.values(transitions)) {
+          const eventKey = transition.eventKey;
+          if (eventKey in index) continue;
+          index[eventKey] = { parentState, transition };
+        }
+        if ('*' in index) break;
+        state = parentState;
+      }
+    }
+    return this._transitionsIndex;
   }
 
   _getKey(n) {

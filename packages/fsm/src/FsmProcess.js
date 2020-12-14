@@ -1,17 +1,18 @@
-import { treeWalkerStep, asyncTreeWalkerStep, MODE } from '@statewalker/tree/index.js';
-import { toTreeIterator, toAsyncTreeIterator } from '@statewalker/tree/index.js';
+import { asyncTreeWalkerStep, toAsyncTreeIterator } from '@statewalker/tree/index.js';
+import { treeWalkerStep, toTreeIterator } from '@statewalker/tree/index.js'; 
 
+import { FsmEvent } from './FsmEvent.js';
 import { FsmState } from './FsmState.js';
+import { FsmStateConfig } from './FsmStateConfig.js';
+import { FsmProcessConfig } from './FsmProcessConfig.js';
+import { FsmTransition } from './FsmTransition.js';
 
 export class FsmProcess extends FsmState {
 
-  constructor(options) {
-    super(options);
-    this.mode = this.options.mode || MODE.LEAF
-    const noop = () => {};
-    this.before = this.options.before || this.before || noop;
-    this.after = this.options.after || this.after || noop;
-    this.transition = this.options.transition || this.transition || noop;
+  constructor(config) {
+    if (!(config instanceof FsmProcessConfig)) config = new FsmProcessConfig(config);
+    super(config);
+    if (!(this.config instanceof FsmProcessConfig)) throw new Error(`Bad process configuration type`);
     this.context = {
       stack : {
         push : (state) => { this.parentState = state; },
@@ -24,40 +25,40 @@ export class FsmProcess extends FsmState {
     };
     const runOptions = {
       context : this.context,
-      first : ({ node }) => this._nextState({ parent : node, init : this }),
+      first : ({ node }) => node ? this._nextState({ parent : node }) : this,
       next : ({ node }) => this._nextState({ parent : node.parent, prev : node }),
-      before : ({ node : state }) => this.before(state),
-      after : ({ node : state }) => this.after(state)
+      before : ({ node : state }) => this.config.doBefore(state),
+      after : ({ node : state }) => this.config.doAfter(state)
     };
     this.nextStep = treeWalkerStep(runOptions);
     this.nextAsyncStep = asyncTreeWalkerStep(runOptions);
+    this._setProcess(this);
   }
 
-  get eventKey() { return this._getKey(this.event); }
+  get event() { return this._event; }
+  async setEvent(eventKey, options) {
+    if (eventKey === null || eventKey === undefined) delete this._event;
+    else this._event = new FsmEvent({ key : eventKey, ...options });
+    return this.config.onEventUpdate(this);
+  }
+  get eventKey() { return this.event ? this.event.key : ''; }
+  suspend() { this.setEvent(undefined); }
+  setError(error) { this.setEvent('error', { error }); }
+  setErrors(...errors) { this.setEvent('error', { errors }); }
+  get suspended() { return !this._event; }
+
   get currentState() { return this.context.node; }
 
   *run() {
-    for (let context of toTreeIterator(this.nextStep, this.mode)) {
+    for (let context of toTreeIterator(this.nextStep, this.config.mode)) {
       yield context.node;
     }
   }
 
   async* runAsync() {
-    for await (let context of toAsyncTreeIterator(this.nextAsyncStep, this.mode)) {
+    for await (let context of toAsyncTreeIterator(this.nextAsyncStep, this.config.mode)) {
       yield context.node;
     }
-  }
-
-  _handleTransition(options) {
-    if (options.next) {
-      options.next.process = this;
-    }
-    if (options.prev || options.next) this.transition(options);
-    return options.next;
-  }
-
-  _newState(parent, stateKey, descriptor) {
-    return new FsmState({ stateKey, parent, descriptor });
   }
 
   /**
@@ -75,27 +76,43 @@ export class FsmProcess extends FsmState {
     return descriptor;
   }
 
-  _nextState({ parent, prev, init }) {
+  _nextState({ parent, prev}) {
     const event = this.event;
-    let next = init, transition;
-    if (parent) {
-      const eventKey = this._getKey(event);
-      const stateKey = this._getKey(prev);
-      transition = parent.descriptor.getTransition(stateKey, eventKey);
-      const descriptor = transition
-        ? this._getSubstateDescriptor(parent, transition.targetStateKey)
-        : null;
-      next = descriptor
-        ? this._newState(parent, transition.targetStateKey, descriptor)
-        : null;
+    const eventKey = this._getKey(event);
+    const stateKey = this._getKey(prev);
+    const transitionDescriptor = parent.descriptor.getTransition(stateKey, eventKey);
+    const targetStateKey = transitionDescriptor
+      ? transitionDescriptor.targetStateKey
+      : null;
+    let next = null;
+    if (targetStateKey) {
+      const descriptor = this._getSubstateDescriptor(parent, targetStateKey);
+      if (!descriptor) throw new Error(`Target state descriptor was not found`);
+      next = this._newState(parent, targetStateKey, descriptor);
     }
-    return this._handleTransition({
-      parent,
-      prev,
-      event,
-      next,
-      transition
-    });
+    if (transitionDescriptor) {
+      const transition = this._newTransition({
+        parent,
+        prev,
+        next,
+        event,
+        descriptor : transitionDescriptor
+      })
+      this.config.onTransition(transition);
+    }
+    return next;
+  }
+
+  _newState(parent, key, descriptor) {
+    const config = new FsmStateConfig({ key, descriptor });
+    const state = new FsmState(config);
+    state._setProcess(this);
+    state._setParentState(parent);
+    return state;
+  }
+
+  _newTransition(options) {
+    return new FsmTransition(options);
   }
 
 }
