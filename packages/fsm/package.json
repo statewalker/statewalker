@@ -1,6 +1,6 @@
 {
   "name": "@statewalker/fsm",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Utility graph methods (iterators, tree builders etc)",
   "keywords": [],
   "homepage": "https://github.com/mkotelnikov/agen",
