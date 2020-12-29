@@ -1,9 +1,19 @@
 export class FsmEvent {
 
-  constructor(options) {
+  constructor(key, options = {}) {
     this.options = options;
-    if (this.key === null || this.key === undefined) throw new Error(`Event key is not defined`);
+    this._key = key;
+    // if (!this.key) throw new Error(`Event key is not defined`);
   }
-  
-  get key() { return this.options.key; }
+
+  get key() { return this._key || ''; }
+
+  async doDump(data) {
+    Object.assign(data, this.options);
+  }
+
+  async doRestore(data) {
+    Object.assign(this.options, data);
+  }
+
 }

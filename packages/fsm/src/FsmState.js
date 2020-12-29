@@ -1,21 +1,35 @@
-import { FsmStateConfig } from './FsmStateConfig.js';
+import { FsmStateDescriptor } from './FsmStateDescriptor.js';
+import { newId } from './newId.js';
 
 export class FsmState {
 
-  constructor(config) {
-    if (!(config instanceof FsmStateConfig)) throw new Error(`Bad state configuration`);
-    this.config = config;
+  constructor(options) {
+    this.options = options;
+    if (!(this.descriptor instanceof FsmStateDescriptor)) throw new Error(`Bad state descriptor`);
+    if (!this.key) throw new Error(`State key is not defined`);
+    this.data = {};
+    this.handlers = [];
   }
 
-  get key() { return this.config.key; }
+  get id() { return this._id = this._id || newId(); }
 
-  get process() { return this._process; }
-  _setProcess(process) { this._process = process; }
+  get key() { return this.options.key || this.descriptor.key; }
 
-  get parent() { return this._parent; }
-  _setParentState(parent) { this._parent = parent; }
+  get process() { return this.options.process; }
+  // _setProcess(process) { this._process = process; }
 
-  get descriptor() { return this.config.descriptor; }
+  get parent() { return this.options.parentState; }
+  // _setParentState(parent) { this._parent = parent; }
+
+  get descriptor() { return this.options.descriptor; }
+
+  setData(key, value) { this.data[key] = value; return this; }
+  getData(key, recursive=true) {
+    for (let state = this; state; state = state.parent) {
+      if (key in state.data) return state.data[key];
+      if (!recursive) return ;
+    }
+  }
 
   getPathSegments() { return [...this.pathSegments]; }
 
@@ -30,6 +44,83 @@ export class FsmState {
   get path() { return this._toPath(this.pathSegments); }
 
   _toPath(segments = []) { return '/' + segments.join('/') }
+
+  addHandler(handler) {
+    const slot = { h : handler, handler };
+    if (typeof handler === 'function') {
+      slot.handler = { before : handler };
+    }
+    this.handlers.push(slot);
+    return () => this._removeHandler(handler);
+  }
+
+  removeHandler(handler) {
+    this.handlers = this.handlers.filter(slot => (handler !== slot.h));
+    return this;
+  }
+
+  async doBefore() {
+    await this._callForward(async h => h.before && await h.before(this));
+  }
+
+  async doAfter() {
+    await this._callBackward(async h => {
+      h.after && await h.after(this);
+      h.done && await h.done(this);
+    });
+  }
+
+  async doInterrupt() {
+    await this._callBackward(async h => {
+      h.interrupt && await h.interrupt(this);
+      h.done && await h.done(this);
+    });
+  }
+
+  async doDump(data) {
+    Object.assign(data, this.data);
+    await this._callForward(async h => h.dump && await h.dump(this, data));
+  }
+
+  async doRestore(data) {
+    Object.assign(this.data, data);
+    await this._callForward(async h => h.restore && await h.restore(this, data));
+  }
+
+  async onTransition(transition) {
+    await this._callForward(async h => h.transition && await h.transition(transition));
+  }
+
+  logError(error) {
+    (this.options.logger || console).error(error);
+  }
+
+  async _callForward(action) {
+    await this._call(this.handlers, action);
+  }
+  async _callBackward(action) {
+    await this._call([...this.handlers].reverse(), action);
+  }
+
+  async _call(handlers, action) {
+    let errors;
+    for (let i = 0; i < handlers.length; i++) {
+      try {
+        const slot = handlers[i];
+        const handler = slot.handler;
+        if (!slot.initialized) {
+          handler.init && await handler.init(this);
+          slot.initialized = true;
+        }
+        await action(handler);
+      } catch (error) {
+        this.logError(error);
+        errors = errors || [];
+        errors.push(error);
+      }
+    }
+    if (errors) this.process.setErrors(errors);
+  }
 
   /**
    * Returns an index of transitions from this state. The resulting object

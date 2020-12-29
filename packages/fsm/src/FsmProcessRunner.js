@@ -1,15 +1,18 @@
-import { MODE } from '@statewalker/tree/index.js';
 import { buildDescriptor } from './buildDescriptor.js';
-import { FsmProcessConfig } from './FsmProcessConfig.js';
-import { FsmProcess } from './FsmProcess.js';
+import { FsmProcessContext } from './FsmProcessContext.js';
+import { LEAF } from './FsmProcess.js';
 
-export class FsmProcessRunner {
+export class FsmProcessRunner extends FsmProcessContext {
 
   constructor(options = {}) {
-    this.options = options;
+    super(options);
     this.index = {};
-    this._processes = {};
-    this._running = {};
+    this._scheduledIndex = {};
+    this._scheduledQueue = [];
+  }
+
+  emit(key, event) {
+    this.options.emit(key, event);
   }
 
   registerProcess(key, descriptor) {
@@ -22,74 +25,73 @@ export class FsmProcessRunner {
     this.index[key] = descriptor;
   }
 
-  startProcess(key, emit, mode = MODE.LEAF) {
+  onEventUpdate(process) {
+    this._schedule(process);
+  }
+
+  startProcess(key) {
     const descriptor = this.index[key];
-    async function handle(actions) {
-      let errors = [];
-      for (let i = 0; i < actions.length; i++) {
-        try { await actions[i](); } catch (error) { errors.push(error); }
-      }
-      return errors;
-    }
-    const config = new FsmProcessConfig({
-      descriptor,
-      before : async(state) => {
-        const before = [];
-        const after = [];
-        let resolve;
-        const promise = new Promise(r => resolve = r);
-        const outputEvent = {
-          key : state.key,
-          promise,
-          before(action) { before.push(action); },
-          after(action) { after.unshift(action); },
-          state,
-          process : state.process
-        }
-        state._outputEventInfo = { activated : false, before, after, promise, resolve };
-        try {
-          emit(state.key, outputEvent);
-          state._outputEventInfo.activated = true;
-          const errors = await handle(state._outputEventInfo.before);
-          if (errors.length) state.process.setErrors(...errors);
-        } catch (error) {
-          state.process.setError(error);
-        }
-      },
-      after : async(state) => {
-        if (state._outputEventInfo.activated) {
-          const errors = await handle(state._outputEventInfo.after);
-          if (errors.length) state.process.setErrors(...errors);
-        }
-        state._outputEventInfo.resolve();
-        return state._outputEventInfo.promise;
-      },
-      onEvent : async (process) => {
-        const processId = process._id;
-        if (processId in this._running) return ;
-        this._running[processId] = true;
-        try {
-          while (!process.suspended) {
-            const { status } = await process.nextAsyncStep();
-            if (!status) { delete this._processes[processId]; break; }
-            if (status & process.mode) break;
-          }
-        } finally {
-          delete this._running[processId];
-        }
-      }
-    });
-    const process = new FsmProcess(config);
-    process.mode = mode;
-    process._id = this._newId('process-');
-    this._processes[process._id] = process;
+    if (!descriptor) throw new Error(`No process descriptor was found. key="${key}"`);
+    const process = this.newProcess({ descriptor });
+    this._schedule(process);
     return process;
   }
 
-  _newId(prefix = '') {
-    const stamp = this._stamp = this._stamp || Date.now() + '';
-    return `${prefix}${stamp}-${this._idCounter = (this._idCounter || 0) + 1}`;
+  _schedule(process) {
+    if (process.suspended || process.finished) return ;
+    if (process.id in this._scheduledIndex) return ;
+    this._scheduledIndex[process.id] = process;
+    process._startRunning();
+    (async () => {
+      try {
+        while ((!process.suspended) && (!process.finished)) {
+          await process.nextStep();
+          if (process.status & LEAF) break;
+        }
+      } finally {
+        process._stopRunning();
+        delete this._scheduledIndex[process.id];
+      }
+    })();
   }
 
+  // _schedule(process) {
+  //   if (process.suspended || process.finished) {
+  //     process._stopRunning();
+  //     return ;
+  //   }
+  //   if (process.id in this._scheduledIndex) return ;
+  //   this._scheduledIndex[process.id] = process;
+  //   this._scheduledQueue.push(process);
+  //   process._startRunning();
+  //   if (this._scheduledQueue.length === 1) {
+  //     this._startHandling();
+  //   }
+  // }
+  //
+  // async _startHandling() {
+  //   while (this._scheduledQueue.length) {
+  //     const process = this._scheduledQueue.pop();
+  //     delete this._scheduledIndex[process.id];
+  //     if (process.suspended || process.finished) {
+  //       process._stopRunning();
+  //       continue;
+  //     }
+  //     if (!process.suspended && !process.finished) {
+  //       await process.nextStep();
+  //       console.log('>>>', process.currentState.key, process.status, process.eventKey, (process.status & LEAF))
+  //       if (!(process.status & LEAF)) this._schedule(process);
+  //       else process._stopRunning();
+  //       // for await (let state of process.iterate()) {
+  //       //   console.log('X', state.path);
+  //       //   // process.suspend();
+  //       //   break;
+  //       // }
+  //       // process._stopRunning();
+  //     } else {
+  //       process._stopRunning();
+  //     }
+  //   }
+  // }
 
 }

@@ -25,14 +25,16 @@ describe(`test access to state information`, () => {
   }
   it(`should be able to interrupt/continue the process`, async () => {
     const events = new EventEmitter();
-    const core = new FsmProcessRunner();
-    core.registerProcess(descriptor);
-    const process = core.startProcess('Selection', (eventKey, event) => {
-      events.emit('*', event);
-      events.emit(eventKey, event);
+    let errors = [];
+    const core = new FsmProcessRunner({
+      logger : { error(error) { errors.push(error); } },
+      onNewState(state) {
+        events.emit('*', state);
+        events.emit(state.key, state);
+      }
     });
-    expect(process.started).to.be(false);
-    expect(process.finished).to.be(false);
+    core.registerProcess(descriptor);
+
     const traces = [];
     const print = (state, ...args) => {
       let shift = '';
@@ -44,23 +46,37 @@ describe(`test access to state information`, () => {
     // events.on('tick:begin', (process) => print(process.currentState, 'BEGIN PROCESS STEPS'));
     // events.on('tick:end', (process) => print(process.currentState, 'END PROCESS STEPS'));
     // events.on('tick:pause', (process) => print(process.currentState, 'PROCESS PAUSE'));
+    events.on('*', (state) => {
+      const stateKey = state.key;
+      // console.log('FFFF', stateKey)
+      state.addHandler({
+        async before() { print(state, `<${stateKey} event="${process.event ? process.event.key : ''}">`); },
+        async after() { print(state, `</${stateKey}>`); }
+      })
+    })
+    events.on('Selected', (state) => {
+      state.addHandler({
+        before() { throw new Error('Hello'); },
+      })
+    })
+    events.on('HandleError', (state) => {
+      state.addHandler({
+        before() { errors = []; },
+      })
+    })
+    // events.on('NonSelected', (state) => {
+    //   // state.process.suspend();
+    //   // next.pause();
+    // })
 
-    events.on('*', ({ key, before, after, state, process }) => {
-      before(() => { print(state, `<${key} event="${process.event ? process.event.key : ''}">`); });
-      after(() => { print(state, `</${key}>`); });
-    })
-    events.on('Selected', ({ before, after }) => {
-      // next.pause();
-      before(() => { throw new Error('Hello'); });
-    })
-    events.on('NonSelected', ({ before, after }) => {
-      // next.pause();
-    })
+    const process = await core.startProcess('Selection');
 
     expect(process.started).to.be(false);
     expect(process.finished).to.be(false);
 
-    await process.setEvent('abc');
+    process.setEvent('abc');
+    await process.waitWhileRunning();
+    expect(errors.length).to.eql(0);
     expect(process.started).to.be(true);
     expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('NonSelected');
@@ -75,7 +91,10 @@ describe(`test access to state information`, () => {
       '    <NonSelected event="abc">'
     ]);
 
-    await process.setEvent('select');
+    process.setEvent('select');
+    await process.waitWhileRunning();
+    expect(errors.length).to.eql(1);
+    expect(errors[0].message).to.eql('Hello');
     expect(process.started).to.be(true);
     expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('UpdateSelection');
@@ -94,6 +113,8 @@ describe(`test access to state information`, () => {
     ]);
 
     await process.setEvent('error');
+    await process.waitWhileRunning();
+    expect(errors.length).to.eql(0);
     expect(process.started).to.be(true);
     expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('HandleError');
@@ -116,6 +137,8 @@ describe(`test access to state information`, () => {
     ]);
 
     await process.setEvent('exit');
+    await process.waitWhileRunning();
+    expect(errors.length).to.eql(0);
     expect(process.started).to.be(true);
     expect(process.finished).to.be(true);
     expect(process.currentState).to.be(undefined);

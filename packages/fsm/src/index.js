@@ -1,10 +1,11 @@
 export * from './buildDescriptor.js';
 export * from './FsmEvent.js';
 export * from './FsmProcess.js';
-export * from './FsmProcessConfig.js';
+export * from './FsmProcessContext.js';
+// export * from './FsmEventedProcessContext.js';
+// // export * from './FsmDispatchingProcessContext.js';
 export * from './FsmProcessRunner.js';
 export * from './FsmState.js';
-export * from './FsmStateConfig.js';
 export * from './FsmStateDescriptor.js';
 export * from './FsmTransition.js';
 export * from './FsmTransitionDescriptor.js';

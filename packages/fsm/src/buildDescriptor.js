@@ -15,19 +15,19 @@ export function buildDescriptor(
   const indexes = { transitions : {}, states : {}, implicitStates : {} };
 
   for (let t of transitions) {
-    let stateKey, eventKey, targetStateKey, options = {};
+    let stateKey, eventKey, targetStateKey, transitionParams = {};
     if (Array.isArray(t)) {
       stateKey = t[0];
       eventKey = t[1];
       targetStateKey = t[2];
-      options = t[3];
-      if (typeof options !== 'object') options = {};
+      transitionParams = t[3];
+      if (typeof transitionParams !== 'object') transitionParams = {};
     } else {
       const { from, event, to, ...opt } = t;
       stateKey = from;
       eventKey = event;
       targetStateKey = to;
-      options = opt;
+      transitionParams = opt;
     }
     const stateTransitions = indexes.transitions[stateKey] = indexes.transitions[stateKey] || {};
     indexes.implicitStates[stateKey] = (indexes.implicitStates[stateKey] || 0) + 1;
@@ -36,7 +36,7 @@ export function buildDescriptor(
       sourceStateKey : stateKey,
       eventKey,
       targetStateKey,
-      ...options
+      params : transitionParams
     });
   }
   if (Array.isArray(states)) {

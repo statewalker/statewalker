@@ -32,8 +32,8 @@ export class FsmStateDescriptor {
   getTransition(stateKey, eventKey) {
     const pairs = [
       [stateKey, eventKey],
-      [stateKey, '*'],
       ['*', eventKey],
+      [stateKey, '*'],
       ['*', '*']
     ];
     let targetInfo;

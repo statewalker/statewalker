@@ -1,7 +1,8 @@
 import expect from 'expect.js';
-import { buildDescriptor, FsmProcess } from '../index.js';
+import { buildDescriptor, FsmProcessContext } from '../index.js';
 
 describe('FsmProcess interruption/continuation', async () => {
+
   const descriptor = {
     key : 'Selection',
     transitions : [
@@ -38,38 +39,39 @@ describe('FsmProcess interruption/continuation', async () => {
       const str = [shift, ...args].reduce((s, v) => s + v, '');
       this.stack.push(str);
     },
-    async before(state) { this.print(state, `<${state.key} event="${state.process.event ? state.process.event.key : ''}">`); },
+    async before(state) { this.print(state, `<${state.key} event="${state.process.eventKey}">`); },
     async after(state) { this.print(state, `</${state.key}>`); }
   });
 
   const stateHandlers = {
     'Wait' : {
-      init : (state) => state.process.suspend()
+      before : (state) => {
+        // console.log('WAIT:BEFORE');
+        state.process.suspend();
+      },
+      // init : (state) => {
+      //   console.log('WAIT:INIT');
+      // },
+      // done : (state) => {
+      //   console.log('WAIT:DONE');
+      // }
     },
-    'HandleError' : (state) => printer.print(state, 'ERROR HANDLER')
+    'HandleError' : (state) => {
+      printer.print(state, 'ERROR HANDLER');
+      state.process.setEvent('');
+    }
   };
-  const transitionHandlers = {};
 
-  const stateHandler = newProcessHandler(checkProcessHandlers(stateHandlers), printer);
-  // const transitionsHandler = newProcessHandler(checkProcessHandlers(stateHandlers), printer);
-  const process = new FsmProcess({
-    descriptor : buildDescriptor(descriptor),
-    before : stateHandler.before,
-    after : stateHandler.after,
-    transition : (transition) => {
-      const getKey = (s, d='') => s ? s.key : d;
-      const getStack = (s, d) => {
-        let stack = [];
-        while (true) {
-          stack.unshift(getKey(s, d));
-          if (!s || s.parent) break;
-          s = s.parent;
-        }
-        return stack.join('/');
-      }
-    },
-    type : 'shp'
+  const context = new FsmProcessContext({
+    onNewState : (state) => {
+      const handler = stateHandlers[state.key];
+      if (handler) state.addHandler(handler);
+      state.addHandler(printer);
+    }
   });
+
+  // const transitionsHandler = newProcessHandler(checkProcessHandlers(stateHandlers), printer);
+  const process = context.newProcess({ descriptor : buildDescriptor(descriptor) });
 
   let control = [];
   it(`process starts and runs while event is defined`, async () => {
@@ -82,7 +84,7 @@ describe('FsmProcess interruption/continuation', async () => {
     expect(printer.stack).to.eql(control);
   })
 
-  return  it(`continue the process and stop at the embedded wait state cleaning events`, async () => {
+  it(`continue the process and stop at the embedded wait state cleaning events`, async () => {
     await run(process, 'select');
     control.push(
       '  </Wait>',
@@ -122,7 +124,7 @@ describe('FsmProcess interruption/continuation', async () => {
     control.push(
       '  </Wait>',
       '  ERROR HANDLER',
-      '  <HandleError event="error">',
+      '  <HandleError event="">',
        '   step 6',
        '  </HandleError>',
        '  <Wait event="">',
@@ -140,6 +142,7 @@ describe('FsmProcess interruption/continuation', async () => {
     );
     expect(printer.stack).to.eql(control);
   })
+console.log('>>>>>>>>>>>>>>>>>');
 
   it(`finalize process`, async () => {
     await run(process, 'exit');
@@ -154,10 +157,10 @@ describe('FsmProcess interruption/continuation', async () => {
     process._steps = process._steps || 0;
     let counter = 0;
     process.setEvent(event);
-    for await (let s of process.runAsync()) {
+    for await (let s of process.iterate()) {
       printer.print(s, ` step ${++process._steps}`);
       if (!process.event) break;
-      if (counter++ > 100) break; // Just in case of infinite loops...
+      if (counter++ > 20) break; // Just in case of infinite loops...
     }
     let transitions = {};
     for (let s = process.currentState; !!s; s = s.parent) {
@@ -166,64 +169,64 @@ describe('FsmProcess interruption/continuation', async () => {
     }
     // printer.print(process.currentState, process.currentState && transitions);
   }
-
-  function checkProcessHandlers(handlers) {
-    function checkProcessHandler(handler) {
-      const noop = () => {};
-      if (typeof handler === 'object') {
-        if (Array.isArray(handler)) {
-          return {
-            before : (state) => handler[0] && handler[0](state),
-            after : (state) => handler[1] && handler[1](state),
-          }
-        } else {
-          return {
-            before : (state) => handler.init && handler.init(state),
-            after : (state) => handler.done && handler.done(state)
-          }
-        }
-      } else if (typeof handler === 'function') {
-        return { before : handler, after : noop }
-      } else {
-        return { before : noop, after : noop};
-      }
-    }
-    return Object
-      .entries(handlers)
-      .reduce((index, [key, handler]) => (index[key] = checkProcessHandler(handler), index), {});
-  }
-
-  function newProcessHandler(handlers, ...wrappers) {
-
-    function getHandler(method) {
-      return async (state) => {
-        const handler = handlers[state.key];
-        if (!handler) return ;
-        try {
-          await handler[method](state);
-        } catch (err) {
-          if (!err.key) err.key = 'error';
-          state.process.setError(err);
-        }
-      }
-    }
-    const list = [{
-      before : getHandler('before'),
-      after : getHandler('after'),
-    }, ...wrappers];
-
-    return {
-      before : async (state) => {
-        for (let i = 0; i < list.length; i++) {
-          list[i].before && (await list[i].before(state));
-        }
-      },
-      after : async (state) => {
-        for (let i = list.length - 1; i >= 0; i--) {
-          list[i].after && (await list[i].after(state));
-        }
-      },
-    }
-  }
+  //
+  // function checkProcessHandlers(handlers) {
+  //   function checkProcessHandler(handler) {
+  //     const noop = () => {};
+  //     if (typeof handler === 'object') {
+  //       if (Array.isArray(handler)) {
+  //         return {
+  //           before : (state) => handler[0] && handler[0](state),
+  //           after : (state) => handler[1] && handler[1](state),
+  //         }
+  //       } else {
+  //         return {
+  //           before : (state) => handler.init && handler.init(state),
+  //           after : (state) => handler.done && handler.done(state)
+  //         }
+  //       }
+  //     } else if (typeof handler === 'function') {
+  //       return { before : handler, after : noop }
+  //     } else {
+  //       return { before : noop, after : noop};
+  //     }
+  //   }
+  //   return Object
+  //     .entries(handlers)
+  //     .reduce((index, [key, handler]) => (index[key] = checkProcessHandler(handler), index), {});
+  // }
+  //
+  // function newProcessHandler(handlers, ...wrappers) {
+  //
+  //   function getHandler(method) {
+  //     return async (state) => {
+  //       const handler = handlers[state.key];
+  //       if (!handler) return ;
+  //       try {
+  //         await handler[method](state);
+  //       } catch (err) {
+  //         if (!err.key) err.key = 'error';
+  //         state.process.setError(err);
+  //       }
+  //     }
+  //   }
+  //   const list = [{
+  //     before : getHandler('before'),
+  //     after : getHandler('after'),
+  //   }, ...wrappers];
+  //
+  //   return {
+  //     before : async (state) => {
+  //       for (let i = 0; i < list.length; i++) {
+  //         list[i].before && (await list[i].before(state));
+  //       }
+  //     },
+  //     after : async (state) => {
+  //       for (let i = list.length - 1; i >= 0; i--) {
+  //         list[i].after && (await list[i].after(state));
+  //       }
+  //     },
+  //   }
+  // }
 
 })
