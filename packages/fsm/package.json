@@ -1,6 +1,6 @@
 {
   "name": "@statewalker/fsm",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "description": "Utility graph methods (iterators, tree builders etc)",
   "keywords": [],
   "homepage": "https://github.com/mkotelnikov/agen",
@@ -32,7 +32,7 @@
     "postpublish": "zip -j dist/statewalker-fsm.zip -- ../../LICENSE README.md dist/statewalker-fsm.js dist/statewalker-fsm.min.js"
   },
   "dependencies": {
-    "@statewalker/tree": "^0.5.1"
+    "@statewalker/tree": "^0.6.0"
   },
   "license": "MIT",
   "sideEffects": false,
