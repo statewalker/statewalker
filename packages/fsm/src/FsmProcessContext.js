@@ -8,7 +8,7 @@ export class FsmProcessContext {
 
   constructor(options) {
     this.options = options || {};
-    ['onNewState', 'onNewProcess', 'onNewEvent', 'onNewTransition']
+    ['onNewState', 'onNewProcess', 'onNewEvent', 'onNewTransition', 'onEventUpdate']
     .forEach(name => {
       if (typeof this.options[name] === 'function') {
         this[name] = this.options[name];

@@ -48,7 +48,17 @@ export class FsmState {
   addHandler(handler) {
     const slot = { h : handler, handler };
     if (typeof handler === 'function') {
-      slot.handler = { before : handler };
+      slot.handler = {};
+      const initParams = (...names) => names.reduce((params, name) => {
+        params[name] = (action) => slot.handler[name] = action;
+        return params;
+      }, { state : this });
+      handler(initParams(
+        'init', 'done',
+        'before', 'after',
+        'dump', 'restore', 'interrupt',
+        'transition'
+      ));
     }
     this.handlers.push(slot);
     return () => this._removeHandler(handler);

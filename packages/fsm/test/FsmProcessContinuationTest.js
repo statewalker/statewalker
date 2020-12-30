@@ -44,22 +44,32 @@ describe('FsmProcess interruption/continuation', async () => {
   });
 
   const stateHandlers = {
-    'Wait' : {
-      before : (state) => {
-        // console.log('WAIT:BEFORE');
-        state.process.suspend();
-      },
-      // init : (state) => {
+      // console.log('--------------------------------');
+    'Wait' : ({ state, init, done, before, after }) => {
+      init(() => state.process.suspend());
+      // init(async () => {
+      //   await new Promise(r => setTimeout(r, 300));
+      //   state.process.suspend();
       //   console.log('WAIT:INIT');
-      // },
-      // done : (state) => {
-      //   console.log('WAIT:DONE');
-      // }
+      // });
+      // done(() => console.log('WAIT:DONE'));
+      // before(() => console.log('WAIT:BEFORE'));
+      // after(() => console.log('WAIT:AFTER'));
     },
-    'HandleError' : (state) => {
-      printer.print(state, 'ERROR HANDLER');
+    'HandleError' : (options) => {
+      const { state, before } = options;
       state.process.setEvent('');
+      before(() => {
+        printer.print(state, 'ERROR HANDLER');
+      })
+
     }
+    // 'HandleError' : {
+    //   before: (state) => {
+    //     printer.print(state, 'ERROR HANDLER');
+    //     state.process.setEvent('');
+    //   }
+    // }
   };
 
   const context = new FsmProcessContext({
@@ -142,7 +152,6 @@ describe('FsmProcess interruption/continuation', async () => {
     );
     expect(printer.stack).to.eql(control);
   })
-console.log('>>>>>>>>>>>>>>>>>');
 
   it(`finalize process`, async () => {
     await run(process, 'exit');

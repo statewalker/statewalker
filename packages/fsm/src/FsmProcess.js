@@ -57,10 +57,11 @@ export class FsmProcess extends FsmState {
   // }
 
   async* iterate(mask = LEAF) {
+    const stop = (typeof mask !== 'function') ? () => (this.status & mask) : mask;
     while (true) {
       await this.nextStep();
       if (!this._status) break;
-      if (this._status & mask) {
+      if (stop(this)) {
         yield this._currentState;
       }
     }
