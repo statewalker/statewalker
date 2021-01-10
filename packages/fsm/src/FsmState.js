@@ -1,6 +1,25 @@
 import { FsmStateDescriptor } from './FsmStateDescriptor.js';
 import { newId } from './newId.js';
 
+export function getStateHandler(state, handler, clear = (()=>{})) {
+  const result = {};
+  const initParams = (...names) => names.reduce((params, name) => {
+    params[name] = (action) => result[name] = action;
+    return params;
+  }, {
+    state,
+    process : state.process,
+    getEvent : () => state.process.event,
+    clear : () => clear()
+  });
+  return Object.assign(result, handler(initParams(
+    'init', 'done',
+    'before', 'after',
+    'dump', 'restore', 'interrupt',
+    'transition'
+  )) || {});
+}
+
 export class FsmState {
 
   constructor(options) {
@@ -47,21 +66,12 @@ export class FsmState {
 
   addHandler(handler) {
     const slot = { h : handler, handler };
+    let clear;
     if (typeof handler === 'function') {
-      slot.handler = {};
-      const initParams = (...names) => names.reduce((params, name) => {
-        params[name] = (action) => slot.handler[name] = action;
-        return params;
-      }, { state : this });
-      handler(initParams(
-        'init', 'done',
-        'before', 'after',
-        'dump', 'restore', 'interrupt',
-        'transition'
-      ));
+      slot.handler = getStateHandler(this, handler, (() => clear()));
     }
     this.handlers.push(slot);
-    return () => this._removeHandler(handler);
+    return clear = (() => { this._removeHandler(handler); clear = (() => {}); });
   }
 
   removeHandler(handler) {
@@ -78,6 +88,7 @@ export class FsmState {
       h.after && await h.after(this);
       h.done && await h.done(this);
     });
+    this.handlers = [];
   }
 
   async doInterrupt() {
@@ -85,6 +96,7 @@ export class FsmState {
       h.interrupt && await h.interrupt(this);
       h.done && await h.done(this);
     });
+    this.handlers = [];
   }
 
   async doDump(data) {
