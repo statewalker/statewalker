@@ -13,6 +13,7 @@ export class FsmProcess extends FsmState {
   constructor(options) {
     super(options);
     if (!this.context) throw new Error(`Process context is not defined`);
+    this._listeners = {};
     this._status = 0;
   }
 
@@ -50,11 +51,29 @@ export class FsmProcess extends FsmState {
     return true;
   }
 
-  // async run(eventKey, options) {
-  //   if (this.currentState && !this.currentState.acceptsEvent(eventKey)) return false;
-  //   this.setEvent(eventKey, options);
-  //   return this.nextStep();
-  // }
+  get maxRunSteps() { return this.options.maxRunSteps || 100; }
+
+  async run(eventKey, ...args) {
+    this.setEvent(eventKey, ...args);
+    if (this._running) return ;
+    this._running = true;
+    try {
+      let counter = 0;
+      const maxCount = this.maxRunSteps;
+      while (!this.suspended) {
+        await this.nextStep();
+        if (!this._status) break;
+        if (counter++ > maxCount) break; // just to avoid infinite loops
+      }
+    } finally {
+      this._running = false;
+    }
+  }
+  async dispatch(eventKey, ...args) {
+    if (this.acceptsEvent(eventKey, true)) {
+      await this.run(eventKey, ...args);
+    }
+  }
 
   async* iterate(mask = LEAF) {
     const stop = (typeof mask !== 'function') ? () => (this.status & mask) : mask;
@@ -170,6 +189,7 @@ export class FsmProcess extends FsmState {
     if (next) {
       this._status = (this._status & EXIT) ? NEXT : FIRST;
       await this._notifyTransition(prev, next, transitionParams);
+      this.notify(next);
       this._currentState = next;
     } else {
       this._status = (this._status & EXIT) ? LAST : LEAF;
@@ -181,6 +201,27 @@ export class FsmProcess extends FsmState {
     this._started = true;
     return this;
   }
+
+  on(stateKey, handler) {
+    let list = this._listeners[stateKey] = this._listeners[stateKey] || [];
+    list.push(handler);
+    return () => this.off(stateKey, handler);
+  }
+  off(stateKey, handler) {
+    let list = this._listeners[stateKey];
+    if (list) {
+      list = list.filter(h => h !== handler);
+      if (list.length) this._listeners[stateKey];
+      else delete this._listeners[stateKey];
+    }
+  }
+  notify(state) {
+    const list = this._listeners[state.key];
+    for (let i = 0, len = list ? list.length : 0; i < len; i++) {
+      list[i](state);
+    }
+  }
+
 
   /**
    * Creates a new substate for the given parent state. Rises an error if
@@ -233,14 +274,15 @@ export class FsmProcess extends FsmState {
    * {@link FsmTransitionDescriptor} (if any)
    */
   _notifyTransition(prevState, nextState, params) {
+    const parentState = this.currentState;
+    if (!parentState) return ;
     const transition = this.context.newTransition({
       process : this,
       prevState,
       nextState,
       params
     })
-    const parentState = this.currentState;
-    if (parentState) parentState.onTransition(transition);
+    parentState.onTransition(transition);
   }
 
   _newEvent(eventKey, options) {

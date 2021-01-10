@@ -9,3 +9,6 @@ export * from './FsmState.js';
 export * from './FsmStateDescriptor.js';
 export * from './FsmTransition.js';
 export * from './FsmTransitionDescriptor.js';
+
+export * from './newId.js';
+export * from './getStateHandler.js';

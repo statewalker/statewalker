@@ -6,8 +6,9 @@ describe(`test access to state information`, () => {
   const descriptor = {
   key : 'Selection',
     transitions : [
-      ['*', '*', 'NonSelected'],
-      ['*', 'select', 'Selected'],
+      ['', '*', 'NonSelected'],
+      ['NonSelected', 'select', 'Selected'],
+      ['Selected', 'clear', 'NonSelected'],
       ['*', 'error', 'HandleError'],
       ['HandleError', '*', ''],
       ['HandleError', 'fixed', 'NonSelected'],
@@ -17,8 +18,8 @@ describe(`test access to state information`, () => {
         key : 'Selected',
         transitions : [
           ['', '*', 'UpdateSelection'],
-          ['*', 'select', 'UpdateSelection'],
-          ['*', 'clear', '']
+          ['UpdateSelection', 'select', 'UpdateSelection'],
+          ['UpdateSelection', 'clear', '']
         ]
       }
     ]
@@ -80,11 +81,11 @@ describe(`test access to state information`, () => {
     expect(process.started).to.be(true);
     expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('NonSelected');
-    expect(process.currentState.getEventKeys()).to.eql(['*', 'error', 'select']);
+    expect(process.currentState.getEventKeys()).to.eql(['error', 'select']);
     expect(process.currentState.acceptsEvent('clear')).to.be(false);
     expect(process.currentState.acceptsEvent('error')).to.be(true);
     expect(process.currentState.acceptsEvent('select')).to.be(true);
-    expect(process.currentState.acceptsEvent('*')).to.be(true);
+    expect(process.currentState.acceptsEvent('*')).to.be(false);
     expect(process.currentState.acceptsEvent('foo')).to.be(false);
     expect(traces).to.eql([
       '  <Selection event="abc">',
@@ -98,11 +99,11 @@ describe(`test access to state information`, () => {
     expect(process.started).to.be(true);
     expect(process.finished).to.be(false);
     expect(process.currentState.key).to.eql('UpdateSelection');
-    expect(process.currentState.getEventKeys()).to.eql(['*', 'clear', 'error', 'select']);
+    expect(process.currentState.getEventKeys()).to.eql(['clear', 'error', 'select']);
     expect(process.currentState.acceptsEvent('clear')).to.be(true);
     expect(process.currentState.acceptsEvent('error')).to.be(true);
     expect(process.currentState.acceptsEvent('select')).to.be(true);
-    expect(process.currentState.acceptsEvent('*')).to.be(true);
+    expect(process.currentState.acceptsEvent('*')).to.be(false);
     expect(process.currentState.acceptsEvent('foo')).to.be(false);
     expect(traces).to.eql([
       '  <Selection event="abc">',

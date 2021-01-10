@@ -1,24 +1,6 @@
 import { FsmStateDescriptor } from './FsmStateDescriptor.js';
 import { newId } from './newId.js';
-
-export function getStateHandler(state, handler, clear = (()=>{})) {
-  const result = {};
-  const initParams = (...names) => names.reduce((params, name) => {
-    params[name] = (action) => result[name] = action;
-    return params;
-  }, {
-    state,
-    process : state.process,
-    getEvent : () => state.process.event,
-    clear : () => clear()
-  });
-  return Object.assign(result, handler(initParams(
-    'init', 'done',
-    'before', 'after',
-    'dump', 'restore', 'interrupt',
-    'transition'
-  )) || {});
-}
+import { getStateHandler } from './getStateHandler.js';
 
 export class FsmState {
 
@@ -170,9 +152,9 @@ export class FsmState {
   /**
    * Returns true if this state accepts an event with the given key.
    */
-  acceptsEvent(eventKey) {
-    const transitions = this._getTransitions();
-    return eventKey in transitions;
+  acceptsEvent(eventKey, expanded) {
+    const transitionsIndex = this._getTransitions();
+    return (eventKey in transitionsIndex) || (!(!expanded) && ('*' in transitionsIndex));
   }
 
   /**
