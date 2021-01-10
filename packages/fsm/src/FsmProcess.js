@@ -203,8 +203,8 @@ export class FsmProcess extends FsmState {
   }
 
   async _notifyNewState(state) {
-    this.notify(state.key, state);
     this.notify('*', state);
+    this.notify(state.key, state);
   }
 
   on(stateKey, handler) {
