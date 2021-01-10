@@ -53,7 +53,7 @@ export class FsmState {
       slot.handler = getStateHandler(this, handler, (() => clear()));
     }
     this.handlers.push(slot);
-    return clear = (() => { this._removeHandler(handler); clear = (() => {}); });
+    return clear = (() => { this.removeHandler(handler); clear = (() => {}); });
   }
 
   removeHandler(handler) {
