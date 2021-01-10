@@ -216,7 +216,7 @@ export class FsmProcess extends FsmState {
     let list = this._listeners[stateKey];
     if (list) {
       list = list.filter(h => h !== handler);
-      if (list.length) this._listeners[stateKey];
+      if (list.length) this._listeners[stateKey] = list;
       else delete this._listeners[stateKey];
     }
   }
