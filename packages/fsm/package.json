@@ -31,9 +31,7 @@
     "prepublishOnly": "rm -rf dist && npm test",
     "postpublish": "zip -j dist/statewalker-fsm.zip -- ../../LICENSE README.md dist/statewalker-fsm.js dist/statewalker-fsm.min.js"
   },
-  "dependencies": {
-    "@statewalker/tree": "^0.6.0"
-  },
+  "dependencies": {},
   "license": "MIT",
   "sideEffects": false,
   "publishConfig": {
