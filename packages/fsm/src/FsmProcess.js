@@ -189,7 +189,7 @@ export class FsmProcess extends FsmState {
     if (next) {
       this._status = (this._status & EXIT) ? NEXT : FIRST;
       await this._notifyTransition(prev, next, transitionParams);
-      this.notify(next);
+      await this._notifyNewState(next);
       this._currentState = next;
     } else {
       this._status = (this._status & EXIT) ? LAST : LEAF;
@@ -200,6 +200,11 @@ export class FsmProcess extends FsmState {
     if (this._status & ENTER) { await this.currentState.doBefore(); }
     this._started = true;
     return this;
+  }
+
+  async _notifyNewState(state) {
+    this.notify(state.key, state);
+    this.notify('*', state);
   }
 
   on(stateKey, handler) {
@@ -215,10 +220,10 @@ export class FsmProcess extends FsmState {
       else delete this._listeners[stateKey];
     }
   }
-  notify(state) {
-    const list = this._listeners[state.key];
+  notify(key, payload) {
+    const list = this._listeners[key];
     for (let i = 0, len = list ? list.length : 0; i < len; i++) {
-      list[i](state);
+      list[i](payload);
     }
   }
 
