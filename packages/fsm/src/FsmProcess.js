@@ -39,8 +39,8 @@ export class FsmProcess extends FsmState {
 
   get finished() { return this.started && !this._status; }
 
-  acceptsEvent(eventKey) {
-    return !this.currentState || this.currentState.acceptsEvent(eventKey);
+  acceptsEvent(eventKey, expanded) {
+    return !this.currentState || this.currentState.acceptsEvent(eventKey, expanded);
   }
 
   setEvent(eventKey, options) {
